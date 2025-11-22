@@ -46,27 +46,23 @@ async function getAllLabels(
 
 /**
  * Formats a completed task for display
+ * Note: Sync API returns minimal fields - just content, completion time, and IDs
  */
 function formatCompletedTaskForDisplay(task: SyncCompletedTask): string {
-  const priority = fromApiPriority(task.priority);
   const completedDate = new Date(task.completed_at).toLocaleString();
-  const dueInfo = task.due?.date ? `\n  Due: ${task.due.date}` : "";
-  const priorityInfo = priority ? `\n  Priority: ${priority}` : "";
-  const labelsInfo =
-    task.labels && task.labels.length > 0
-      ? `\n  Labels: ${task.labels.join(", ")}`
-      : "";
-  const descriptionInfo = task.description
-    ? `\n  Description: ${task.description}`
+  const sectionInfo = task.section_id
+    ? `\n  Section ID: ${task.section_id}`
     : "";
-  const parentInfo = task.parent_id ? `\n  Parent ID: ${task.parent_id}` : "";
 
-  return `• ${task.content} (ID: ${task.id})
-  Completed: ${completedDate}${dueInfo}${priorityInfo}${labelsInfo}${descriptionInfo}${parentInfo}`;
+  return `• ${task.content}
+  Task ID: ${task.task_id}
+  Completed: ${completedDate}
+  Project ID: ${task.project_id}${sectionInfo}`;
 }
 
 /**
  * Filters completed tasks based on search criteria
+ * Note: Sync API returns limited fields, so some filters are not available
  */
 function filterCompletedTasks(
   tasks: SyncCompletedTask[],
@@ -79,14 +75,8 @@ function filterCompletedTasks(
     filtered = filtered.filter((task) => task.project_id === args.project_id);
   }
 
-  // Filter by labels
-  if (args.label_id) {
-    const labelFilters = args.label_id.split(",").map((l) => l.trim());
-    filtered = filtered.filter((task) => {
-      if (!Array.isArray(task.labels)) return false;
-      return labelFilters.some((label) => task.labels!.includes(label));
-    });
-  }
+  // Note: label_id filtering is not available - Sync API doesn't return labels
+  // Note: due date filtering is not available - Sync API doesn't return original due dates
 
   // Filter by completion date range
   if (args.completed_after || args.completed_before) {
@@ -105,34 +95,12 @@ function filterCompletedTasks(
     });
   }
 
-  // Filter by original due date range
-  if (args.due_after || args.due_before) {
-    filtered = filtered.filter((task) => {
-      if (!task.due?.date) return false;
-      const dueDate = task.due.date;
-
-      if (args.due_after && dueDate < args.due_after) {
-        return false;
-      }
-
-      if (args.due_before && dueDate > args.due_before) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  // Filter by content/description search
+  // Filter by content search only (no description available)
   if (args.content_contains) {
     const searchTerm = args.content_contains.toLowerCase();
-    filtered = filtered.filter((task) => {
-      const contentMatch = task.content.toLowerCase().includes(searchTerm);
-      const descriptionMatch = task.description
-        ? task.description.toLowerCase().includes(searchTerm)
-        : false;
-      return contentMatch || descriptionMatch;
-    });
+    filtered = filtered.filter((task) =>
+      task.content.toLowerCase().includes(searchTerm)
+    );
   }
 
   // Apply limit
@@ -171,40 +139,14 @@ export async function handleGetCompletedTasks(
       }
     }
 
-    // Resolve label names to actual label names (in case numeric IDs were passed)
-    let labelFilter = args.label_id;
-    if (labelFilter) {
-      const labelIds = labelFilter.split(",").map((l) => l.trim());
-      const resolvedLabels: string[] = [];
+    // Note: Label filtering is not supported by Sync API (doesn't return label data)
+    // Note: Due date filtering is not supported by Sync API (doesn't return original due dates)
 
-      const allLabels = await getAllLabels(todoistClient);
-
-      for (const labelId of labelIds) {
-        // Remove @ prefix if present
-        const cleanLabelId = labelId.startsWith("@")
-          ? labelId.substring(1)
-          : labelId;
-
-        // Check if it's a numeric ID
-        if (/^\d+$/.test(cleanLabelId)) {
-          const label = allLabels.find((l) => l.id === cleanLabelId);
-          resolvedLabels.push(label ? label.name : cleanLabelId);
-        } else {
-          resolvedLabels.push(cleanLabelId);
-        }
-      }
-
-      labelFilter = resolvedLabels.join(",");
-    }
-
-    // Create cache key based on filters
+    // Create cache key based on available filters
     const cacheKey = JSON.stringify({
       project: projectId,
-      labels: labelFilter,
       completed_after: args.completed_after,
       completed_before: args.completed_before,
-      due_after: args.due_after,
-      due_before: args.due_before,
       content: args.content_contains,
       limit: args.limit,
     });
@@ -216,11 +158,10 @@ export async function handleGetCompletedTasks(
       // Fetch from Sync API
       const allCompletedTasks = await syncClient.getCompletedTasks();
 
-      // Apply filters with resolved project and labels
+      // Apply filters with resolved project
       const filteredArgs: GetCompletedTasksArgs = {
         ...args,
         project_id: projectId,
-        label_id: labelFilter,
       };
 
       completedTasks = filterCompletedTasks(allCompletedTasks, filteredArgs);

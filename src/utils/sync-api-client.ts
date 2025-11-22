@@ -74,7 +74,7 @@ export class SyncAPIClient {
 
   /**
    * Retrieves all completed tasks from Sync API
-   * Returns tasks with checked: true and is_deleted: false
+   * All items returned from this endpoint are completed tasks by definition
    */
   async getCompletedTasks(): Promise<SyncCompletedTask[]> {
     try {
@@ -84,14 +84,10 @@ export class SyncAPIClient {
         );
 
       // Extract items array from response
+      // All items from /completed/get_all are completed tasks
       const items = response.items || [];
 
-      // Filter out deleted items and ensure they're actually completed
-      const completedTasks = items.filter(
-        (task) => task.checked && !task.is_deleted
-      );
-
-      return completedTasks;
+      return items;
     } catch (error) {
       if (error instanceof SyncAPIError) {
         throw error;
@@ -122,12 +118,8 @@ export class SyncAPIClient {
 
       const items = response.items || [];
 
-      // Filter out deleted items
-      const completedTasks = items.filter(
-        (task) => task.checked && !task.is_deleted
-      );
-
-      return completedTasks;
+      // All items from this endpoint are completed tasks
+      return items;
     } catch (error) {
       if (error instanceof SyncAPIError) {
         throw error;

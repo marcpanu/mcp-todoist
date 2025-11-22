@@ -374,27 +374,22 @@ export interface TaskHierarchy {
 }
 
 // Sync API v9 interfaces for completed tasks
+// Note: The Sync API returns a simplified structure for completed items
 export interface SyncCompletedTask {
-  id: string;
-  content: string;
-  description?: string;
-  checked: boolean; // Always true for completed tasks
+  id: string; // Completion record ID
+  task_id: string; // The actual task ID
+  content: string; // Task content/title
   completed_at: string; // ISO 8601 datetime when task was completed
-  project_id: string;
-  section_id?: string | null;
-  parent_id?: string | null;
-  labels?: string[];
-  priority?: number;
-  due?: {
-    date?: string;
-    string?: string;
-    datetime?: string;
-    timezone?: string;
-  } | null;
-  deadline?: {
-    date: string;
-  } | null;
-  is_deleted: boolean;
+  project_id: string; // Project ID
+  section_id?: string | null; // Section ID
+  user_id?: string; // User who completed the task
+  note_count?: number; // Number of notes
+  notes?: unknown[]; // Array of notes
+  item_object?: unknown | null; // Full item details (may be null)
+  meta_data?: unknown | null; // Additional metadata
+  v2_task_id?: string; // V2 API task ID
+  v2_project_id?: string; // V2 API project ID
+  v2_section_id?: string; // V2 API section ID
 }
 
 export interface GetCompletedTasksArgs {
