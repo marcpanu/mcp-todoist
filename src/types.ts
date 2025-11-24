@@ -387,9 +387,9 @@ export interface SyncCompletedTask {
   notes?: unknown[]; // Array of notes
   item_object?: unknown | null; // Full item details (may be null)
   meta_data?: unknown | null; // Additional metadata
-  v2_task_id?: string; // V2 API task ID
-  v2_project_id?: string; // V2 API project ID
-  v2_section_id?: string; // V2 API section ID
+  v2_task_id: string; // V2 API task ID (required)
+  v2_project_id: string; // V2 API project ID (required)
+  v2_section_id?: string; // V2 API section ID (optional)
 }
 
 export interface GetCompletedTasksArgs {

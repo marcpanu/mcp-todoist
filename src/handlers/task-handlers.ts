@@ -29,6 +29,8 @@ import {
   extractArrayFromResponse,
   createCacheKey,
   formatTaskForDisplay,
+  buildProjectIdToNameMap,
+  buildSectionIdToNameMap,
 } from "../utils/api-helpers.js";
 import { formatDueDetails, getDueDateOnly } from "../utils/datetime-utils.js";
 import { toApiPriority, fromApiPriority } from "../utils/priority-mapper.js";
@@ -201,7 +203,15 @@ export async function handleGetTasks(
   if (args.task_id) {
     try {
       const task = await todoistClient.getTask(args.task_id);
-      return formatTaskForDisplay(task as TodoistTask);
+
+      // Build name maps for display
+      const projectMap = await buildProjectIdToNameMap(todoistClient);
+      const sectionMap = await buildSectionIdToNameMap(todoistClient);
+
+      const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
+      const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
+
+      return formatTaskForDisplay(task as TodoistTask, projectName, sectionName);
     } catch {
       return `Task with ID "${args.task_id}" not found`;
     }
@@ -357,15 +367,24 @@ export async function handleGetTasks(
     filteredTasks = filteredTasks.slice(0, args.limit);
   }
 
-  const taskList = filteredTasks
-    .map((task) => formatTaskForDisplay(task))
-    .join("\n\n");
-
   const taskCount = filteredTasks.length;
 
   if (taskCount === 0) {
     return "No tasks found matching the criteria";
   }
+
+  // Build name maps for display
+  const projectMap = await buildProjectIdToNameMap(todoistClient);
+  const sectionMap = await buildSectionIdToNameMap(todoistClient);
+
+  // Format tasks with resolved names
+  const taskList = filteredTasks
+    .map((task) => {
+      const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
+      const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
+      return formatTaskForDisplay(task, projectName, sectionName);
+    })
+    .join("\n\n");
 
   const taskWord = taskCount === 1 ? "task" : "tasks";
   return `${taskCount} ${taskWord} found:\n\n${taskList}`;

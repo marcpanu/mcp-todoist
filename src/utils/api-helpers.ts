@@ -105,23 +105,44 @@ export function createCacheKey(
  * Formats a Todoist task for display in responses
  *
  * @param task - The task object to format
+ * @param projectName - Optional project name to display with ID
+ * @param sectionName - Optional section name to display with ID
  * @returns Formatted string representation of the task
  */
-export function formatTaskForDisplay(task: {
-  id?: string;
-  content: string;
-  description?: string;
-  due?: { string: string } | null;
-  deadline?: { date: string } | null;
-  priority?: number;
-  labels?: string[];
-  projectId?: string;
-  sectionId?: string | null;
-}): string {
+export function formatTaskForDisplay(
+  task: {
+    id?: string;
+    content: string;
+    description?: string;
+    due?: { string: string } | null;
+    deadline?: { date: string } | null;
+    priority?: number;
+    labels?: string[];
+    projectId?: string;
+    sectionId?: string | null;
+  },
+  projectName?: string | null,
+  sectionName?: string | null
+): string {
   const displayPriority = fromApiPriority(task.priority);
   const dueDetails = formatDueDetails(
     task.due as TodoistTaskDueData | null | undefined
   );
+
+  // Format project display
+  let projectDisplay = "";
+  if (task.projectId) {
+    const name = projectName || "Unknown";
+    projectDisplay = `\n  Project: ${name} (${task.projectId})`;
+  }
+
+  // Format section display
+  let sectionDisplay = "";
+  if (task.sectionId) {
+    const name = sectionName || "Unknown";
+    sectionDisplay = `\n  Section: ${name} (${task.sectionId})`;
+  }
+
   return `- ${task.content}${task.id ? ` (ID: ${task.id})` : ""}${
     task.description ? `\n  Description: ${task.description}` : ""
   }${dueDetails ? `\n  Due: ${dueDetails}` : ""}${
@@ -130,9 +151,7 @@ export function formatTaskForDisplay(task: {
     task.labels && task.labels.length > 0
       ? `\n  Labels: ${task.labels.join(", ")}`
       : ""
-  }${task.projectId ? `\n  Project ID: ${task.projectId}` : ""}${
-    task.sectionId ? `\n  Section ID: ${task.sectionId}` : ""
-  }`;
+  }${projectDisplay}${sectionDisplay}`;
 }
 
 /**
@@ -211,4 +230,48 @@ export async function resolveProjectIdentifier(
 
   // If not found, throw an error
   throw new Error(`Project not found: "${projectIdentifier}"`);
+}
+
+/**
+ * Builds a map of project IDs to project names
+ *
+ * @param todoistClient - The Todoist API client
+ * @returns Map of project ID to project name
+ */
+export async function buildProjectIdToNameMap(
+  todoistClient: { getProjects: () => Promise<unknown> }
+): Promise<Map<string, string>> {
+  const result = await todoistClient.getProjects();
+  const projects = extractArrayFromResponse<{ id: string; name: string }>(
+    result
+  );
+
+  const projectMap = new Map<string, string>();
+  for (const project of projects) {
+    projectMap.set(project.id, project.name);
+  }
+
+  return projectMap;
+}
+
+/**
+ * Builds a map of section IDs to section names
+ *
+ * @param todoistClient - The Todoist API client
+ * @returns Map of section ID to section name
+ */
+export async function buildSectionIdToNameMap(
+  todoistClient: { getSections: (args?: any) => Promise<unknown> }
+): Promise<Map<string, string>> {
+  const result = await todoistClient.getSections({});
+  const sections = extractArrayFromResponse<{ id: string; name: string }>(
+    result
+  );
+
+  const sectionMap = new Map<string, string>();
+  for (const section of sections) {
+    sectionMap.set(section.id, section.name);
+  }
+
+  return sectionMap;
 }

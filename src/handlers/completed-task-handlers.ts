@@ -8,7 +8,11 @@ import {
   validateLimit,
   validateProjectId,
 } from "../validation.js";
-import { resolveProjectIdentifier } from "../utils/api-helpers.js";
+import {
+  resolveProjectIdentifier,
+  buildProjectIdToNameMap,
+  buildSectionIdToNameMap,
+} from "../utils/api-helpers.js";
 
 // Get centralized cache manager and register completed tasks cache
 const cacheManager = CacheManager.getInstance();
@@ -26,17 +30,32 @@ const completedTaskCache = cacheManager.getOrCreateCache<SyncCompletedTask[]>(
  * Formats a completed task for display
  * Note: Sync API returns minimal fields - just content, completion time, and IDs
  * Uses v2_* fields to match REST API v2 ID format (alphanumeric) for consistency
+ *
+ * @param task - The completed task to format
+ * @param projectName - Optional project name to display with ID
+ * @param sectionName - Optional section name to display with ID
  */
-function formatCompletedTaskForDisplay(task: SyncCompletedTask): string {
+function formatCompletedTaskForDisplay(
+  task: SyncCompletedTask,
+  projectName?: string | null,
+  sectionName?: string | null
+): string {
   const completedDate = new Date(task.completed_at).toLocaleString();
-  const sectionInfo = task.v2_section_id
-    ? `\n  Section ID: ${task.v2_section_id}`
-    : "";
+
+  // Format project display
+  const projectDisplayName = projectName || "Unknown";
+  const projectInfo = `\n  Project: ${projectDisplayName} (${task.v2_project_id})`;
+
+  // Format section display
+  let sectionInfo = "";
+  if (task.v2_section_id) {
+    const sectionDisplayName = sectionName || "Unknown";
+    sectionInfo = `\n  Section: ${sectionDisplayName} (${task.v2_section_id})`;
+  }
 
   return `• ${task.content}
   Task ID: ${task.v2_task_id}
-  Completed: ${completedDate}
-  Project ID: ${task.v2_project_id}${sectionInfo}`;
+  Completed: ${completedDate}${projectInfo}${sectionInfo}`;
 }
 
 /**
@@ -156,8 +175,19 @@ export async function handleGetCompletedTasks(
       return "No completed tasks found matching the criteria";
     }
 
+    // Build name maps for display
+    const projectMap = await buildProjectIdToNameMap(todoistClient);
+    const sectionMap = await buildSectionIdToNameMap(todoistClient);
+
+    // Format tasks with resolved names
     const taskList = completedTasks
-      .map((task) => formatCompletedTaskForDisplay(task))
+      .map((task) => {
+        const projectName = projectMap.get(task.v2_project_id) || null;
+        const sectionName = task.v2_section_id
+          ? sectionMap.get(task.v2_section_id) || null
+          : null;
+        return formatCompletedTaskForDisplay(task, projectName, sectionName);
+      })
       .join("\n\n");
 
     const taskWord = completedTasks.length === 1 ? "task" : "tasks";
