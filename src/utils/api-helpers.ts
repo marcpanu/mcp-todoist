@@ -244,22 +244,34 @@ export async function resolveProjectIdentifier(
 
 /**
  * Builds a map of project IDs to project names
+ * Fetches all projects across all pages
  *
  * @param todoistClient - The Todoist API client
  * @returns Map of project ID to project name
  */
 export async function buildProjectIdToNameMap(
-  todoistClient: { getProjects: () => Promise<unknown> }
+  todoistClient: { getProjects: (args?: any) => Promise<unknown> }
 ): Promise<Map<string, string>> {
-  const result = await todoistClient.getProjects();
-  const projects = extractArrayFromResponse<{ id: string; name: string }>(
-    result
-  );
-
   const projectMap = new Map<string, string>();
-  for (const project of projects) {
-    projectMap.set(project.id, project.name);
-  }
+  let cursor: string | null = null;
+
+  // Fetch all pages of projects
+  do {
+    const result = await todoistClient.getProjects(cursor ? { cursor } : {});
+    const response = result as {
+      results?: any[];
+      nextCursor?: string | null;
+    };
+
+    const projects = response.results || [];
+    for (const project of projects) {
+      if (project.id && project.name) {
+        projectMap.set(project.id, project.name);
+      }
+    }
+
+    cursor = response.nextCursor || null;
+  } while (cursor);
 
   return projectMap;
 }
