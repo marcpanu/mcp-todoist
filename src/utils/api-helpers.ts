@@ -266,6 +266,7 @@ export async function buildProjectIdToNameMap(
 
 /**
  * Builds a map of section IDs to section names
+ * Fetches all sections across all pages
  *
  * @param todoistClient - The Todoist API client
  * @returns Map of section ID to section name
@@ -273,15 +274,28 @@ export async function buildProjectIdToNameMap(
 export async function buildSectionIdToNameMap(
   todoistClient: { getSections: (args: any) => Promise<unknown> }
 ): Promise<Map<string, string>> {
-  const result = await todoistClient.getSections({ projectId: null });
-  const sections = extractArrayFromResponse<{ id: string; name: string }>(
-    result
-  );
-
   const sectionMap = new Map<string, string>();
-  for (const section of sections) {
-    sectionMap.set(section.id, section.name);
-  }
+  let cursor: string | null = null;
+
+  // Fetch all pages of sections
+  do {
+    const result = await todoistClient.getSections(
+      cursor ? { projectId: null, cursor } : { projectId: null }
+    );
+    const response = result as {
+      results?: any[];
+      nextCursor?: string | null;
+    };
+
+    const sections = response.results || [];
+    for (const section of sections) {
+      if (section.id && section.name) {
+        sectionMap.set(section.id, section.name);
+      }
+    }
+
+    cursor = response.nextCursor || null;
+  } while (cursor);
 
   return sectionMap;
 }
