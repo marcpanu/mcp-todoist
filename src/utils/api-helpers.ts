@@ -107,6 +107,7 @@ export function createCacheKey(
  * @param task - The task object to format
  * @param projectName - Optional project name to display with ID
  * @param sectionName - Optional section name to display with ID
+ * @param parentTaskName - Optional parent task name to display with ID
  * @returns Formatted string representation of the task
  */
 export function formatTaskForDisplay(
@@ -120,9 +121,11 @@ export function formatTaskForDisplay(
     labels?: string[];
     projectId?: string;
     sectionId?: string | null;
+    parentId?: string | null;
   },
   projectName?: string | null,
-  sectionName?: string | null
+  sectionName?: string | null,
+  parentTaskName?: string | null
 ): string {
   const displayPriority = fromApiPriority(task.priority);
   const dueDetails = formatDueDetails(
@@ -143,6 +146,13 @@ export function formatTaskForDisplay(
     sectionDisplay = `\n  Section: ${name} (${task.sectionId})`;
   }
 
+  // Format parent task display
+  let parentDisplay = "";
+  if (task.parentId) {
+    const name = parentTaskName || "Unknown";
+    parentDisplay = `\n  Parent Task: ${name} (${task.parentId})`;
+  }
+
   return `- ${task.content}${task.id ? ` (ID: ${task.id})` : ""}${
     task.description ? `\n  Description: ${task.description}` : ""
   }${dueDetails ? `\n  Due: ${dueDetails}` : ""}${
@@ -151,7 +161,7 @@ export function formatTaskForDisplay(
     task.labels && task.labels.length > 0
       ? `\n  Labels: ${task.labels.join(", ")}`
       : ""
-  }${projectDisplay}${sectionDisplay}`;
+  }${projectDisplay}${sectionDisplay}${parentDisplay}`;
 }
 
 /**
@@ -261,9 +271,9 @@ export async function buildProjectIdToNameMap(
  * @returns Map of section ID to section name
  */
 export async function buildSectionIdToNameMap(
-  todoistClient: { getSections: (args?: any) => Promise<unknown> }
+  todoistClient: { getSections: (args: any) => Promise<unknown> }
 ): Promise<Map<string, string>> {
-  const result = await todoistClient.getSections({});
+  const result = await todoistClient.getSections({ projectId: null });
   const sections = extractArrayFromResponse<{ id: string; name: string }>(
     result
   );
@@ -274,4 +284,35 @@ export async function buildSectionIdToNameMap(
   }
 
   return sectionMap;
+}
+
+/**
+ * Builds a map of task IDs to task content (names)
+ * Fetches all tasks across all pages
+ *
+ * @param todoistClient - The Todoist API client
+ * @returns Map of task ID to task content
+ */
+export async function buildTaskIdToNameMap(
+  todoistClient: { getTasks: (args?: any) => Promise<unknown> }
+): Promise<Map<string, string>> {
+  const taskMap = new Map<string, string>();
+  let cursor: string | null = null;
+
+  // Fetch all pages of tasks
+  do {
+    const result = await todoistClient.getTasks(cursor ? { cursor } : {});
+    const response = result as { results?: any[]; nextCursor?: string | null };
+
+    const tasks = response.results || [];
+    for (const task of tasks) {
+      if (task.id && task.content) {
+        taskMap.set(task.id, task.content);
+      }
+    }
+
+    cursor = response.nextCursor || null;
+  } while (cursor);
+
+  return taskMap;
 }

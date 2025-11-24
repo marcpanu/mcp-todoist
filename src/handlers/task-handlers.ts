@@ -31,6 +31,7 @@ import {
   formatTaskForDisplay,
   buildProjectIdToNameMap,
   buildSectionIdToNameMap,
+  buildTaskIdToNameMap,
 } from "../utils/api-helpers.js";
 import { formatDueDetails, getDueDateOnly } from "../utils/datetime-utils.js";
 import { toApiPriority, fromApiPriority } from "../utils/priority-mapper.js";
@@ -207,11 +208,13 @@ export async function handleGetTasks(
       // Build name maps for display
       const projectMap = await buildProjectIdToNameMap(todoistClient);
       const sectionMap = await buildSectionIdToNameMap(todoistClient);
+      const taskMap = await buildTaskIdToNameMap(todoistClient);
 
       const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
       const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
+      const parentTaskName = task.parentId ? taskMap.get(task.parentId) || null : null;
 
-      return formatTaskForDisplay(task as TodoistTask, projectName, sectionName);
+      return formatTaskForDisplay(task as TodoistTask, projectName, sectionName, parentTaskName);
     } catch {
       return `Task with ID "${args.task_id}" not found`;
     }
@@ -376,13 +379,15 @@ export async function handleGetTasks(
   // Build name maps for display
   const projectMap = await buildProjectIdToNameMap(todoistClient);
   const sectionMap = await buildSectionIdToNameMap(todoistClient);
+  const taskMap = await buildTaskIdToNameMap(todoistClient);
 
   // Format tasks with resolved names
   const taskList = filteredTasks
     .map((task) => {
       const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
       const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
-      return formatTaskForDisplay(task, projectName, sectionName);
+      const parentTaskName = task.parentId ? taskMap.get(task.parentId) || null : null;
+      return formatTaskForDisplay(task, projectName, sectionName, parentTaskName);
     })
     .join("\n\n");
 
