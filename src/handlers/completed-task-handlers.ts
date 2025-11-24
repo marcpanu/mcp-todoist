@@ -9,7 +9,6 @@ import {
   validateProjectId,
 } from "../validation.js";
 import { resolveProjectIdentifier } from "../utils/api-helpers.js";
-import { fromApiPriority } from "../utils/priority-mapper.js";
 
 // Get centralized cache manager and register completed tasks cache
 const cacheManager = CacheManager.getInstance();
@@ -24,45 +23,26 @@ const completedTaskCache = cacheManager.getOrCreateCache<SyncCompletedTask[]>(
 );
 
 /**
- * Helper function to get all labels (for label name resolution)
- */
-async function getAllLabels(
-  todoistClient: TodoistApi
-): Promise<{ id: string; name: string }[]> {
-  const labelCache = cacheManager.getOrCreateCache<
-    { id: string; name: string }[]
-  >("labels", 30000);
-  const cacheKey = "all_labels";
-
-  let labels = labelCache.get(cacheKey);
-  if (!labels) {
-    const response = await todoistClient.getLabels();
-    labels = Array.isArray(response) ? response : [];
-    labelCache.set(cacheKey, labels);
-  }
-
-  return labels || [];
-}
-
-/**
  * Formats a completed task for display
  * Note: Sync API returns minimal fields - just content, completion time, and IDs
+ * Uses v2_* fields to match REST API v2 ID format (alphanumeric) for consistency
  */
 function formatCompletedTaskForDisplay(task: SyncCompletedTask): string {
   const completedDate = new Date(task.completed_at).toLocaleString();
-  const sectionInfo = task.section_id
-    ? `\n  Section ID: ${task.section_id}`
+  const sectionInfo = task.v2_section_id
+    ? `\n  Section ID: ${task.v2_section_id}`
     : "";
 
   return `• ${task.content}
-  Task ID: ${task.task_id}
+  Task ID: ${task.v2_task_id}
   Completed: ${completedDate}
-  Project ID: ${task.project_id}${sectionInfo}`;
+  Project ID: ${task.v2_project_id}${sectionInfo}`;
 }
 
 /**
  * Filters completed tasks based on search criteria
  * Note: Sync API returns limited fields, so some filters are not available
+ * Uses v2_project_id to match REST API v2 ID format (alphanumeric)
  */
 function filterCompletedTasks(
   tasks: SyncCompletedTask[],
@@ -70,9 +50,11 @@ function filterCompletedTasks(
 ): SyncCompletedTask[] {
   let filtered = tasks;
 
-  // Filter by project
+  // Filter by project (using v2_project_id to match REST API v2 format)
   if (args.project_id) {
-    filtered = filtered.filter((task) => task.project_id === args.project_id);
+    filtered = filtered.filter(
+      (task) => task.v2_project_id === args.project_id
+    );
   }
 
   // Note: label_id filtering is not available - Sync API doesn't return labels

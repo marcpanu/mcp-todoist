@@ -115,6 +115,8 @@ export function formatTaskForDisplay(task: {
   deadline?: { date: string } | null;
   priority?: number;
   labels?: string[];
+  projectId?: string;
+  sectionId?: string | null;
 }): string {
   const displayPriority = fromApiPriority(task.priority);
   const dueDetails = formatDueDetails(
@@ -128,6 +130,8 @@ export function formatTaskForDisplay(task: {
     task.labels && task.labels.length > 0
       ? `\n  Labels: ${task.labels.join(", ")}`
       : ""
+  }${task.projectId ? `\n  Project ID: ${task.projectId}` : ""}${
+    task.sectionId ? `\n  Section ID: ${task.sectionId}` : ""
   }`;
 }
 
