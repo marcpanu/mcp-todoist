@@ -249,9 +249,9 @@ export async function resolveProjectIdentifier(
  * @param todoistClient - The Todoist API client
  * @returns Map of project ID to project name
  */
-export async function buildProjectIdToNameMap(
-  todoistClient: { getProjects: (args?: any) => Promise<unknown> }
-): Promise<Map<string, string>> {
+export async function buildProjectIdToNameMap(todoistClient: {
+  getProjects: (args?: any) => Promise<unknown>;
+}): Promise<Map<string, string>> {
   const projectMap = new Map<string, string>();
   let cursor: string | null = null;
 
@@ -283,9 +283,9 @@ export async function buildProjectIdToNameMap(
  * @param todoistClient - The Todoist API client
  * @returns Map of section ID to section name
  */
-export async function buildSectionIdToNameMap(
-  todoistClient: { getSections: (args: any) => Promise<unknown> }
-): Promise<Map<string, string>> {
+export async function buildSectionIdToNameMap(todoistClient: {
+  getSections: (args: any) => Promise<unknown>;
+}): Promise<Map<string, string>> {
   const sectionMap = new Map<string, string>();
   let cursor: string | null = null;
 
@@ -319,9 +319,9 @@ export async function buildSectionIdToNameMap(
  * @param todoistClient - The Todoist API client
  * @returns Map of task ID to task content
  */
-export async function buildTaskIdToNameMap(
-  todoistClient: { getTasks: (args?: any) => Promise<unknown> }
-): Promise<Map<string, string>> {
+export async function buildTaskIdToNameMap(todoistClient: {
+  getTasks: (args?: any) => Promise<unknown>;
+}): Promise<Map<string, string>> {
   const taskMap = new Map<string, string>();
   let cursor: string | null = null;
 

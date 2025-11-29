@@ -38,6 +38,7 @@ import {
   isPromoteSubtaskArgs,
   isGetTaskHierarchyArgs,
   isGetCompletedTasksArgs,
+  isInstagramExtractTextArgs,
 } from "./type-guards.js";
 import {
   handleCreateTask,
@@ -80,6 +81,7 @@ import {
   handleGetTaskHierarchy,
 } from "./handlers/subtask-handlers.js";
 import { handleGetCompletedTasks } from "./handlers/completed-task-handlers.js";
+import { handleInstagramExtractText } from "./handlers/instagram-handlers.js";
 import { createSyncAPIClient } from "./utils/sync-api-client.js";
 import { handleError } from "./errors.js";
 import type { TaskHierarchy, TaskNode } from "./types.js";
@@ -120,11 +122,18 @@ const server = new Server(
   }
 );
 
-// Check for API token
+// Check for API tokens
 const TODOIST_API_TOKEN = process.env.TODOIST_API_TOKEN!;
 if (!TODOIST_API_TOKEN) {
   console.error("Error: TODOIST_API_TOKEN environment variable is required");
   process.exit(1);
+}
+
+const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
+if (!APIFY_API_TOKEN) {
+  console.error(
+    "Warning: APIFY_API_TOKEN environment variable not set. Instagram extraction features will not work."
+  );
 }
 
 // Initialize Todoist client (with optional dry-run wrapper)
@@ -358,6 +367,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           throw new Error("Invalid arguments for todoist_completed_tasks_get");
         }
         result = await handleGetCompletedTasks(apiClient, syncApiClient, args);
+        break;
+
+      case "todoist_instagram_extract_text":
+        if (!isInstagramExtractTextArgs(args)) {
+          throw new Error(
+            "Invalid arguments for todoist_instagram_extract_text"
+          );
+        }
+        if (!APIFY_API_TOKEN) {
+          throw new Error(
+            "APIFY_API_TOKEN environment variable is required for Instagram extraction"
+          );
+        }
+        const instagramResult = await handleInstagramExtractText(
+          args,
+          APIFY_API_TOKEN
+        );
+        // Ensure valid JSON by stringifying and parsing to catch any issues
+        try {
+          const jsonStr = JSON.stringify(instagramResult);
+          JSON.parse(jsonStr); // Validate it's parseable
+          result = jsonStr;
+        } catch (jsonError) {
+          console.error("[INSTAGRAM] JSON stringify error:", jsonError);
+          result = JSON.stringify({
+            success: false,
+            error: "Failed to serialize Instagram response",
+            details: String(jsonError),
+          });
+        }
         break;
 
       case "todoist_test_connection":

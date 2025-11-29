@@ -20,6 +20,7 @@ import {
   PromoteSubtaskArgs,
   GetTaskHierarchyArgs,
   GetCompletedTasksArgs,
+  InstagramExtractTextArgs,
 } from "./types.js";
 
 export function isCreateTaskArgs(args: unknown): args is CreateTaskArgs {
@@ -368,5 +369,17 @@ export function isGetCompletedTasksArgs(
     (obj.content_contains === undefined ||
       typeof obj.content_contains === "string") &&
     (obj.limit === undefined || typeof obj.limit === "number")
+  );
+}
+
+export function isInstagramExtractTextArgs(
+  args: unknown
+): args is InstagramExtractTextArgs {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "url" in args &&
+    typeof (args as { url: string }).url === "string" &&
+    (args as { url: string }).url.includes("instagram.com")
   );
 }

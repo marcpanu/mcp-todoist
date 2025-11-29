@@ -408,3 +408,56 @@ export interface SyncAPIResponse<T> {
   sync_token?: string;
   full_sync?: boolean;
 }
+
+// Instagram scraping interfaces
+export interface InstagramExtractTextArgs {
+  url: string; // Instagram post URL
+}
+
+export interface ApifyInstagramComment {
+  id: string;
+  text: string;
+  ownerUsername: string;
+  ownerProfilePicUrl?: string;
+  timestamp: string;
+  repliesCount?: number;
+  likesCount?: number;
+}
+
+export interface ApifyInstagramResponse {
+  id: string;
+  type: string; // "Video" | "Image" | "Sidecar"
+  caption?: string;
+  ownerUsername?: string;
+  ownerFullName?: string;
+  url?: string;
+  commentsCount?: number;
+  likesCount?: number;
+  timestamp?: string;
+  videoUrl?: string;
+  videoDuration?: number;
+  displayUrl?: string;
+  latestComments?: ApifyInstagramComment[];
+}
+
+export interface InstagramExtractTextResponse {
+  success: boolean;
+  instagram_url: string;
+  type: string;
+  caption: string;
+  author: {
+    username: string;
+    displayName: string;
+  };
+  comments: Array<{
+    username: string;
+    text: string;
+    timestamp: string;
+  }>;
+  likesCount: number;
+  commentsCount: number;
+  videoUrl?: string;
+  videoDuration?: number;
+  displayUrl?: string;
+  error?: string;
+}

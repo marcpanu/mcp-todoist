@@ -5,6 +5,7 @@ import { PROJECT_TOOLS } from "./project-tools.js";
 import { COMMENT_TOOLS } from "./comment-tools.js";
 import { LABEL_TOOLS } from "./label-tools.js";
 import { COMPLETED_TASK_TOOLS } from "./completed-task-tools.js";
+import { INSTAGRAM_TOOLS } from "./instagram-tools.js";
 import { TEST_TOOLS } from "./test-tools.js";
 
 // Export individual tool categories
@@ -14,6 +15,7 @@ export { PROJECT_TOOLS } from "./project-tools.js";
 export { COMMENT_TOOLS } from "./comment-tools.js";
 export { LABEL_TOOLS } from "./label-tools.js";
 export { COMPLETED_TASK_TOOLS } from "./completed-task-tools.js";
+export { INSTAGRAM_TOOLS } from "./instagram-tools.js";
 export { TEST_TOOLS } from "./test-tools.js";
 
 // Export individual tools for backwards compatibility
@@ -56,6 +58,8 @@ export {
 
 export { GET_COMPLETED_TASKS_TOOL } from "./completed-task-tools.js";
 
+export { INSTAGRAM_EXTRACT_TEXT_TOOL } from "./instagram-tools.js";
+
 export {
   TEST_CONNECTION_TOOL,
   TEST_ALL_FEATURES_TOOL,
@@ -70,5 +74,6 @@ export const ALL_TOOLS = [
   ...LABEL_TOOLS,
   ...SUBTASK_TOOLS,
   ...COMPLETED_TASK_TOOLS,
+  ...INSTAGRAM_TOOLS,
   ...TEST_TOOLS,
 ];

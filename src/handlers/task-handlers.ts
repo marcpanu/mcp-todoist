@@ -210,11 +210,22 @@ export async function handleGetTasks(
       const sectionMap = await buildSectionIdToNameMap(todoistClient);
       const taskMap = await buildTaskIdToNameMap(todoistClient);
 
-      const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
-      const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
-      const parentTaskName = task.parentId ? taskMap.get(task.parentId) || null : null;
+      const projectName = task.projectId
+        ? projectMap.get(task.projectId) || null
+        : null;
+      const sectionName = task.sectionId
+        ? sectionMap.get(task.sectionId) || null
+        : null;
+      const parentTaskName = task.parentId
+        ? taskMap.get(task.parentId) || null
+        : null;
 
-      return formatTaskForDisplay(task as TodoistTask, projectName, sectionName, parentTaskName);
+      return formatTaskForDisplay(
+        task as TodoistTask,
+        projectName,
+        sectionName,
+        parentTaskName
+      );
     } catch {
       return `Task with ID "${args.task_id}" not found`;
     }
@@ -384,10 +395,21 @@ export async function handleGetTasks(
   // Format tasks with resolved names
   const taskList = filteredTasks
     .map((task) => {
-      const projectName = task.projectId ? projectMap.get(task.projectId) || null : null;
-      const sectionName = task.sectionId ? sectionMap.get(task.sectionId) || null : null;
-      const parentTaskName = task.parentId ? taskMap.get(task.parentId) || null : null;
-      return formatTaskForDisplay(task, projectName, sectionName, parentTaskName);
+      const projectName = task.projectId
+        ? projectMap.get(task.projectId) || null
+        : null;
+      const sectionName = task.sectionId
+        ? sectionMap.get(task.sectionId) || null
+        : null;
+      const parentTaskName = task.parentId
+        ? taskMap.get(task.parentId) || null
+        : null;
+      return formatTaskForDisplay(
+        task,
+        projectName,
+        sectionName,
+        parentTaskName
+      );
     })
     .join("\n\n");
 
