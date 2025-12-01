@@ -21,6 +21,7 @@ import {
   GetTaskHierarchyArgs,
   GetCompletedTasksArgs,
   InstagramExtractTextArgs,
+  TranscribeVideoArgs,
 } from "./types.js";
 
 export function isCreateTaskArgs(args: unknown): args is CreateTaskArgs {
@@ -381,5 +382,16 @@ export function isInstagramExtractTextArgs(
     "url" in args &&
     typeof (args as { url: string }).url === "string" &&
     (args as { url: string }).url.includes("instagram.com")
+  );
+}
+
+export function isTranscribeVideoArgs(
+  args: unknown
+): args is TranscribeVideoArgs {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "video_url" in args &&
+    typeof (args as { video_url: string }).video_url === "string"
   );
 }

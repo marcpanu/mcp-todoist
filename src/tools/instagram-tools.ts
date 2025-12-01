@@ -18,4 +18,24 @@ export const INSTAGRAM_EXTRACT_TEXT_TOOL: Tool = {
   },
 };
 
-export const INSTAGRAM_TOOLS = [INSTAGRAM_EXTRACT_TEXT_TOOL];
+export const TRANSCRIBE_VIDEO_TOOL: Tool = {
+  name: "todoist_transcribe_video",
+  description:
+    "Transcribe audio/video content from a video URL (e.g., Instagram video URL) using OpenAI Whisper API. Downloads the video file and returns the transcribed text. Supports videos up to 25MB in formats: m4a, mp3, webm, mp4, mpga, wav, mpeg.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      video_url: {
+        type: "string",
+        description:
+          "Direct URL to the video file (e.g., https://scontent-ord5-1.cdninstagram.com/...)",
+      },
+    },
+    required: ["video_url"],
+  },
+};
+
+export const INSTAGRAM_TOOLS = [
+  INSTAGRAM_EXTRACT_TEXT_TOOL,
+  TRANSCRIBE_VIDEO_TOOL,
+];

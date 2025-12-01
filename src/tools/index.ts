@@ -58,7 +58,10 @@ export {
 
 export { GET_COMPLETED_TASKS_TOOL } from "./completed-task-tools.js";
 
-export { INSTAGRAM_EXTRACT_TEXT_TOOL } from "./instagram-tools.js";
+export {
+  INSTAGRAM_EXTRACT_TEXT_TOOL,
+  TRANSCRIBE_VIDEO_TOOL,
+} from "./instagram-tools.js";
 
 export {
   TEST_CONNECTION_TOOL,

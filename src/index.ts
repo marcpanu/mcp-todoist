@@ -39,6 +39,7 @@ import {
   isGetTaskHierarchyArgs,
   isGetCompletedTasksArgs,
   isInstagramExtractTextArgs,
+  isTranscribeVideoArgs,
 } from "./type-guards.js";
 import {
   handleCreateTask,
@@ -81,7 +82,10 @@ import {
   handleGetTaskHierarchy,
 } from "./handlers/subtask-handlers.js";
 import { handleGetCompletedTasks } from "./handlers/completed-task-handlers.js";
-import { handleInstagramExtractText } from "./handlers/instagram-handlers.js";
+import {
+  handleInstagramExtractText,
+  handleTranscribeVideo,
+} from "./handlers/instagram-handlers.js";
 import { createSyncAPIClient } from "./utils/sync-api-client.js";
 import { handleError } from "./errors.js";
 import type { TaskHierarchy, TaskNode } from "./types.js";
@@ -133,6 +137,13 @@ const APIFY_API_TOKEN = process.env.APIFY_API_TOKEN || "";
 if (!APIFY_API_TOKEN) {
   console.error(
     "Warning: APIFY_API_TOKEN environment variable not set. Instagram extraction features will not work."
+  );
+}
+
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+if (!OPENAI_API_KEY) {
+  console.error(
+    "Warning: OPENAI_API_KEY environment variable not set. Video transcription features will not work."
   );
 }
 
@@ -397,6 +408,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             details: String(jsonError),
           });
         }
+        break;
+
+      case "todoist_transcribe_video":
+        if (!isTranscribeVideoArgs(args)) {
+          throw new Error("Invalid arguments for todoist_transcribe_video");
+        }
+        if (!OPENAI_API_KEY) {
+          throw new Error(
+            "OPENAI_API_KEY environment variable is required for video transcription"
+          );
+        }
+        const transcribeResult = await handleTranscribeVideo(
+          args,
+          OPENAI_API_KEY
+        );
+        result = JSON.stringify(transcribeResult);
         break;
 
       case "todoist_test_connection":

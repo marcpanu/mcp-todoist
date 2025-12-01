@@ -461,3 +461,14 @@ export interface InstagramExtractTextResponse {
   displayUrl?: string;
   error?: string;
 }
+
+export interface TranscribeVideoArgs {
+  video_url: string;
+}
+
+export interface TranscribeVideoResponse {
+  success: boolean;
+  video_url: string;
+  transcription: string;
+  error?: string;
+}

@@ -1,8 +1,11 @@
 import type {
   InstagramExtractTextArgs,
   InstagramExtractTextResponse,
+  TranscribeVideoArgs,
+  TranscribeVideoResponse,
 } from "../types.js";
 import { scrapeInstagramPost } from "../utils/apify-client.js";
+import { downloadAndTranscribe } from "../utils/openai-client.js";
 import { sanitizeInput, VALIDATION_LIMITS } from "../validation.js";
 
 /**
@@ -25,7 +28,10 @@ export async function handleInstagramExtractText(
     });
 
     // Basic Instagram URL validation
-    if (!cleanUrl.includes("instagram.com") || !cleanUrl.startsWith("https://")) {
+    if (
+      !cleanUrl.includes("instagram.com") ||
+      !cleanUrl.startsWith("https://")
+    ) {
       return {
         success: false,
         instagram_url: args.url,
@@ -61,6 +67,54 @@ export async function handleInstagramExtractText(
       likesCount: 0,
       commentsCount: 0,
       error: `Instagram extraction failed: ${errorMessage}`,
+    };
+  }
+}
+
+/**
+ * Handler for transcribing video content from Instagram posts
+ * Downloads video from URL and transcribes using OpenAI Whisper API
+ *
+ * @param args - Video transcription arguments containing video URL
+ * @param openaiToken - OpenAI API token from environment
+ * @returns Transcription text or error message
+ */
+export async function handleTranscribeVideo(
+  args: TranscribeVideoArgs,
+  openaiToken: string
+): Promise<TranscribeVideoResponse> {
+  try {
+    // Sanitize URL without HTML encoding
+    const cleanUrl = sanitizeInput(args.video_url, {
+      allowHtml: true,
+      maxLength: VALIDATION_LIMITS.URL_MAX,
+    });
+
+    // Basic URL validation
+    if (!cleanUrl.startsWith("https://")) {
+      return {
+        success: false,
+        video_url: args.video_url,
+        transcription: "",
+        error: "Invalid video URL - must start with https://",
+      };
+    }
+
+    // Download and transcribe
+    const transcription = await downloadAndTranscribe(cleanUrl, openaiToken);
+
+    return {
+      success: true,
+      video_url: cleanUrl,
+      transcription,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      video_url: args.video_url,
+      transcription: "",
+      error: `Video transcription failed: ${errorMessage}`,
     };
   }
 }
