@@ -532,50 +532,22 @@ export async function handleCompleteTask(
   todoistClient: TodoistApi,
   args: any
 ): Promise<string> {
-  // Check if we're in dry-run mode
-  const isDryRun = process.env.DRYRUN === "true";
-  const prefix = isDryRun ? "[DRY-RUN] " : "";
-
-  // Clear cache since we're completing
-  taskCache.clear();
-
-  // Check for batch mode (task_ids array)
-  const taskIds = args.task_ids || args.taskIds;
-  if (taskIds && Array.isArray(taskIds)) {
-    // Batch mode: complete multiple tasks by IDs
-    const results: string[] = [];
-    const errors: string[] = [];
-
-    for (const taskId of taskIds) {
-      try {
-        const task = await todoistClient.getTask(taskId);
-        await todoistClient.closeTask(taskId);
-        results.push(`✓ ${task.content} (${taskId})`);
-      } catch (error) {
-        errors.push(`✗ ${taskId}: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }
-
-    const summary = [
-      `${prefix}Completed ${results.length} of ${taskIds.length} tasks`,
-      results.length > 0 ? `\nSucceeded:\n${results.join("\n")}` : "",
-      errors.length > 0 ? `\nFailed:\n${errors.join("\n")}` : "",
-    ]
-      .filter(Boolean)
-      .join("");
-
-    return summary;
-  }
-
-  // Single mode: complete one task by ID or name
+  // Handle both snake_case and camelCase
   const { taskId, taskName } = extractTaskIdentifiers(args);
 
   // Validate that at least one identifier is provided
   validateTaskIdentifier(taskId, taskName);
 
+  // Clear cache since we're completing
+  taskCache.clear();
+
   const matchingTask = await findTaskByIdOrName(todoistClient, args);
 
   await todoistClient.closeTask(matchingTask.id);
+
+  // Check if we're in dry-run mode
+  const isDryRun = process.env.DRYRUN === "true";
+  const prefix = isDryRun ? "[DRY-RUN] " : "";
 
   return `${prefix}Successfully completed task: "${matchingTask.content}"`;
 }
@@ -933,9 +905,52 @@ export async function handleBulkCompleteTasks(
   args: BulkTaskFilterArgs
 ): Promise<string> {
   try {
+    // Check if we're in dry-run mode
+    const isDryRun = process.env.DRYRUN === "true";
+    const prefix = isDryRun ? "[DRY-RUN] " : "";
+
     // Clear cache since we're completing
     taskCache.clear();
 
+    // Check for explicit task IDs mode
+    const taskIds = args.task_ids || (args as any).taskIds;
+    if (taskIds && Array.isArray(taskIds)) {
+      // Complete tasks by explicit IDs
+      const completedTasks: string[] = [];
+      const errors: string[] = [];
+
+      for (const taskId of taskIds) {
+        try {
+          const task = await todoistClient.getTask(taskId);
+          await todoistClient.closeTask(taskId);
+          completedTasks.push(`${task.content} (${taskId})`);
+        } catch (error) {
+          errors.push(
+            `${taskId}: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+
+      const successCount = completedTasks.length;
+      const errorCount = errors.length;
+
+      let response = `${prefix}Bulk complete: ${successCount} completed, ${errorCount} failed.\n\n`;
+
+      if (successCount > 0) {
+        response += "Completed tasks:\n";
+        response += completedTasks.map((content) => `- ${content}`).join("\n");
+        response += "\n\n";
+      }
+
+      if (errorCount > 0) {
+        response += "Errors:\n";
+        response += errors.map((err) => `- ${err}`).join("\n");
+      }
+
+      return response.trim();
+    }
+
+    // Search criteria mode (existing behavior)
     validateBulkSearchCriteria(args.search_criteria);
 
     const result = await todoistClient.getTasks();
@@ -963,11 +978,7 @@ export async function handleBulkCompleteTasks(
     const successCount = completedTasks.length;
     const errorCount = errors.length;
 
-    // Check if we're in dry-run mode
-    const isDryRun = process.env.DRYRUN === "true";
-    const prefix = isDryRun ? "[DRY-RUN] " : "";
-
-    let response = `${prefix}Bulk complete completed: ${successCount} completed, ${errorCount} failed.\n\n`;
+    let response = `${prefix}Bulk complete: ${successCount} completed, ${errorCount} failed.\n\n`;
 
     if (successCount > 0) {
       response += "Completed tasks:\n";

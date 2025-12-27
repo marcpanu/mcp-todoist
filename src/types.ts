@@ -38,7 +38,6 @@ export interface UpdateTaskArgs {
 export interface TaskNameArgs {
   task_name?: string;
   task_id?: string;
-  task_ids?: string[];
 }
 
 export interface GetSectionsArgs {
@@ -140,6 +139,7 @@ export interface BulkUpdateTasksArgs {
 }
 
 export interface BulkTaskFilterArgs {
+  task_ids?: string[];
   search_criteria: {
     project_id?: string;
     priority?: number;

@@ -91,7 +91,7 @@ export function isTaskNameArgs(args: unknown): args is TaskNameArgs {
 
   const obj = args as Record<string, unknown>;
 
-  // Must have either task_id/taskId, task_name/taskName, or task_ids/taskIds
+  // Must have either task_id/taskId or task_name/taskName
   // Check both snake_case and camelCase since MCP might transform them
   const hasTaskId =
     ("task_id" in obj && typeof obj.task_id === "string") ||
@@ -99,15 +99,8 @@ export function isTaskNameArgs(args: unknown): args is TaskNameArgs {
   const hasTaskName =
     ("task_name" in obj && typeof obj.task_name === "string") ||
     ("taskName" in obj && typeof obj.taskName === "string");
-  const hasTaskIds =
-    ("task_ids" in obj &&
-      Array.isArray(obj.task_ids) &&
-      obj.task_ids.every((id) => typeof id === "string")) ||
-    ("taskIds" in obj &&
-      Array.isArray(obj.taskIds) &&
-      (obj.taskIds as unknown[]).every((id) => typeof id === "string"));
 
-  return hasTaskId || hasTaskName || hasTaskIds;
+  return hasTaskId || hasTaskName;
 }
 
 export function isGetProjectsArgs(
@@ -176,6 +169,17 @@ export function isBulkTaskFilterArgs(
   if (typeof args !== "object" || args === null) return false;
 
   const obj = args as Record<string, unknown>;
+
+  // Validate task_ids if present
+  const hasValidTaskIds =
+    obj.task_ids === undefined ||
+    (Array.isArray(obj.task_ids) &&
+      obj.task_ids.every((id) => typeof id === "string")) ||
+    (obj.taskIds !== undefined &&
+      Array.isArray(obj.taskIds) &&
+      (obj.taskIds as unknown[]).every((id) => typeof id === "string"));
+
+  if (!hasValidTaskIds) return false;
 
   // The tool expects parameters at the top level, not in search_criteria
   // We need to wrap them into search_criteria for the handler

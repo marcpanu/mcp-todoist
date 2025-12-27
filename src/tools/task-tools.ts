@@ -196,25 +196,19 @@ export const DELETE_TASK_TOOL: Tool = {
 export const COMPLETE_TASK_TOOL: Tool = {
   name: "todoist_task_complete",
   description:
-    "Mark one or more tasks as complete. Supports single task (by ID or name) or multiple tasks (by array of IDs)",
+    "Mark a single task as complete by ID or name search (case-insensitive)",
   inputSchema: {
     type: "object",
     properties: {
       task_id: {
         type: "string",
         description:
-          "Single task ID to complete (optional, takes precedence over task_name and task_ids)",
+          "Task ID to complete (optional, takes precedence over task_name)",
       },
       task_name: {
         type: "string",
         description:
           "Partial task name to search for completion (used if task_id not provided)",
-      },
-      task_ids: {
-        type: "array",
-        items: { type: "string" },
-        description:
-          "Array of task IDs to complete in batch (used if task_id and task_name not provided)",
       },
     },
     required: [],
@@ -405,13 +399,20 @@ export const BULK_DELETE_TASKS_TOOL: Tool = {
 export const BULK_COMPLETE_TASKS_TOOL: Tool = {
   name: "todoist_tasks_bulk_complete",
   description:
-    "Complete multiple tasks at once based on search criteria. Efficiently mark many tasks as done.",
+    "Complete multiple tasks at once. Supports explicit task IDs or search criteria filters. Efficiently mark many tasks as done.",
   inputSchema: {
     type: "object",
     properties: {
+      task_ids: {
+        type: "array",
+        items: { type: "string" },
+        description:
+          "Array of specific task IDs to complete (optional, takes precedence over search criteria)",
+      },
       project_id: {
         type: "string",
-        description: "Complete tasks from this project ID (optional)",
+        description:
+          "Complete tasks from this project ID (optional, used if task_ids not provided)",
       },
       priority: {
         type: "number",
