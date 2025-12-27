@@ -75,16 +75,18 @@ export class SyncAPIClient {
   /**
    * Retrieves all completed tasks from Sync API
    * All items returned from this endpoint are completed tasks by definition
+   * Uses annotate_items=true to get full task details including description, labels, due dates, etc.
    */
   async getCompletedTasks(): Promise<SyncCompletedTask[]> {
     try {
       const response =
         await this.makeRequest<SyncAPIResponse<SyncCompletedTask>>(
-          "/completed/get_all"
+          "/completed/get_all?annotate_items=true"
         );
 
       // Extract items array from response
       // All items from /completed/get_all are completed tasks
+      // With annotate_items=true, each item includes item_object with full task details
       const items = response.items || [];
 
       return items;

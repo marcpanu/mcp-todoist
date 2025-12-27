@@ -385,7 +385,15 @@ export interface SyncCompletedTask {
   user_id?: string; // User who completed the task
   note_count?: number; // Number of notes
   notes?: unknown[]; // Array of notes
-  item_object?: unknown | null; // Full item details (may be null)
+  item_object?: {
+    // Full task details (populated when annotate_items=true)
+    description?: string;
+    labels?: string[];
+    due?: { date: string; string: string; is_recurring: boolean } | null;
+    priority: number;
+    parent_id?: string | null;
+    v2_parent_id?: string | null;
+  } | null;
   meta_data?: unknown | null; // Additional metadata
   v2_task_id: string; // V2 API task ID (required)
   v2_project_id: string; // V2 API project ID (required)

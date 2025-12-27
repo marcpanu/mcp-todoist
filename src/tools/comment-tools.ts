@@ -42,7 +42,6 @@ export const CREATE_COMMENT_TOOL: Tool = {
       },
     },
     required: ["content"],
-    anyOf: [{ required: ["task_id"] }, { required: ["task_name"] }],
   },
 };
 

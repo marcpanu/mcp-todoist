@@ -47,10 +47,6 @@ export const CREATE_SUBTASK_TOOL: Tool = {
       },
     },
     required: ["content"],
-    anyOf: [
-      { required: ["parent_task_id"] },
-      { required: ["parent_task_name"] },
-    ],
   },
 };
 
@@ -110,10 +106,6 @@ export const BULK_CREATE_SUBTASKS_TOOL: Tool = {
       },
     },
     required: ["subtasks"],
-    anyOf: [
-      { required: ["parent_task_id"] },
-      { required: ["parent_task_name"] },
-    ],
   },
 };
 
@@ -144,7 +136,6 @@ export const CONVERT_TO_SUBTASK_TOOL: Tool = {
           "Name/content of the parent task (optional if parent_task_id is provided)",
       },
     },
-    anyOf: [{ required: ["task_id"] }, { required: ["task_name"] }],
   },
 };
 
@@ -173,7 +164,6 @@ export const PROMOTE_SUBTASK_TOOL: Tool = {
         description: "ID of the section to move the task to (optional)",
       },
     },
-    anyOf: [{ required: ["subtask_id"] }, { required: ["subtask_name"] }],
   },
 };
 
@@ -200,7 +190,6 @@ export const GET_TASK_HIERARCHY_TOOL: Tool = {
         default: false,
       },
     },
-    anyOf: [{ required: ["task_id"] }, { required: ["task_name"] }],
   },
 };
 

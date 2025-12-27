@@ -12,6 +12,7 @@ import {
   resolveProjectIdentifier,
   buildProjectIdToNameMap,
   buildSectionIdToNameMap,
+  buildTaskIdToNameMap,
 } from "../utils/api-helpers.js";
 
 // Get centralized cache manager and register completed tasks cache
@@ -27,20 +28,23 @@ const completedTaskCache = cacheManager.getOrCreateCache<SyncCompletedTask[]>(
 );
 
 /**
- * Formats a completed task for display
- * Note: Sync API returns minimal fields - just content, completion time, and IDs
+ * Formats a completed task for display with full metadata from item_object
+ * With annotate_items=true, includes description, labels, due dates, priority, and parent task
  * Uses v2_* fields to match REST API v2 ID format (alphanumeric) for consistency
  *
  * @param task - The completed task to format
  * @param projectName - Optional project name to display with ID
  * @param sectionName - Optional section name to display with ID
+ * @param parentTaskName - Optional parent task name to display with ID
  */
 function formatCompletedTaskForDisplay(
   task: SyncCompletedTask,
   projectName?: string | null,
-  sectionName?: string | null
+  sectionName?: string | null,
+  parentTaskName?: string | null
 ): string {
   const completedDate = new Date(task.completed_at).toLocaleString();
+  const item = task.item_object;
 
   // Format project display
   const projectDisplayName = projectName || "Unknown";
@@ -53,14 +57,45 @@ function formatCompletedTaskForDisplay(
     sectionInfo = `\n  Section: ${sectionDisplayName} (${task.v2_section_id})`;
   }
 
+  // Description
+  const descriptionInfo = item?.description
+    ? `\n  Description: ${item.description}`
+    : "";
+
+  // Priority (convert from API format: 4=P1, 3=P2, 2=P3, 1=P4)
+  const priorityMap: { [key: number]: string } = {
+    4: "P1 (Highest)",
+    3: "P2",
+    2: "P3",
+    1: "P4 (Lowest)",
+  };
+  const priorityInfo =
+    item?.priority ? `\n  Priority: ${priorityMap[item.priority]}` : "";
+
+  // Labels
+  const labelsInfo =
+    item?.labels && item.labels.length > 0
+      ? `\n  Labels: ${item.labels.join(", ")}`
+      : "";
+
+  // Original due date
+  const dueInfo = item?.due
+    ? `\n  Due Date: ${item.due.string} (${item.due.date})${item.due.is_recurring ? " [Recurring]" : ""}`
+    : "";
+
+  // Parent task
+  const parentInfo = item?.v2_parent_id
+    ? `\n  Parent Task: ${parentTaskName || "Unknown"} (${item.v2_parent_id})`
+    : "";
+
   return `• ${task.content}
   Task ID: ${task.v2_task_id}
-  Completed: ${completedDate}${projectInfo}${sectionInfo}`;
+  Completed: ${completedDate}${projectInfo}${sectionInfo}${descriptionInfo}${priorityInfo}${labelsInfo}${dueInfo}${parentInfo}`;
 }
 
 /**
  * Filters completed tasks based on search criteria
- * Note: Sync API returns limited fields, so some filters are not available
+ * With annotate_items=true, can filter by labels, due dates, and description
  * Uses v2_project_id to match REST API v2 ID format (alphanumeric)
  */
 function filterCompletedTasks(
@@ -76,8 +111,29 @@ function filterCompletedTasks(
     );
   }
 
-  // Note: label_id filtering is not available - Sync API doesn't return labels
-  // Note: due date filtering is not available - Sync API doesn't return original due dates
+  // Filter by labels
+  if (args.label_id) {
+    const labelNames = args.label_id
+      .split(",")
+      .map((l) => l.trim().replace(/^@/, ""));
+    filtered = filtered.filter((task) => {
+      const taskLabels = task.item_object?.labels || [];
+      return labelNames.some((label) => taskLabels.includes(label));
+    });
+  }
+
+  // Filter by original due date range
+  if (args.due_after || args.due_before) {
+    filtered = filtered.filter((task) => {
+      const dueDate = task.item_object?.due?.date;
+      if (!dueDate) return false;
+
+      if (args.due_after && dueDate < args.due_after) return false;
+      if (args.due_before && dueDate > args.due_before) return false;
+
+      return true;
+    });
+  }
 
   // Filter by completion date range
   if (args.completed_after || args.completed_before) {
@@ -96,11 +152,13 @@ function filterCompletedTasks(
     });
   }
 
-  // Filter by content search only (no description available)
+  // Filter by content or description search
   if (args.content_contains) {
     const searchTerm = args.content_contains.toLowerCase();
-    filtered = filtered.filter((task) =>
-      task.content.toLowerCase().includes(searchTerm)
+    filtered = filtered.filter(
+      (task) =>
+        task.content.toLowerCase().includes(searchTerm) ||
+        task.item_object?.description?.toLowerCase().includes(searchTerm)
     );
   }
 
@@ -140,14 +198,14 @@ export async function handleGetCompletedTasks(
       }
     }
 
-    // Note: Label filtering is not supported by Sync API (doesn't return label data)
-    // Note: Due date filtering is not supported by Sync API (doesn't return original due dates)
-
-    // Create cache key based on available filters
+    // Create cache key based on all available filters
     const cacheKey = JSON.stringify({
       project: projectId,
+      label: args.label_id,
       completed_after: args.completed_after,
       completed_before: args.completed_before,
+      due_after: args.due_after,
+      due_before: args.due_before,
       content: args.content_contains,
       limit: args.limit,
     });
@@ -156,7 +214,7 @@ export async function handleGetCompletedTasks(
     let completedTasks = completedTaskCache.get(cacheKey);
 
     if (!completedTasks) {
-      // Fetch from Sync API
+      // Fetch from Sync API (with annotate_items=true for full metadata)
       const allCompletedTasks = await syncClient.getCompletedTasks();
 
       // Apply filters with resolved project
@@ -178,6 +236,7 @@ export async function handleGetCompletedTasks(
     // Build name maps for display
     const projectMap = await buildProjectIdToNameMap(todoistClient);
     const sectionMap = await buildSectionIdToNameMap(todoistClient);
+    const taskMap = await buildTaskIdToNameMap(todoistClient);
 
     // Format tasks with resolved names
     const taskList = completedTasks
@@ -186,7 +245,16 @@ export async function handleGetCompletedTasks(
         const sectionName = task.v2_section_id
           ? sectionMap.get(task.v2_section_id) || null
           : null;
-        return formatCompletedTaskForDisplay(task, projectName, sectionName);
+        const parentTaskName =
+          task.item_object?.v2_parent_id
+            ? taskMap.get(task.item_object.v2_parent_id) || null
+            : null;
+        return formatCompletedTaskForDisplay(
+          task,
+          projectName,
+          sectionName,
+          parentTaskName
+        );
       })
       .join("\n\n");
 

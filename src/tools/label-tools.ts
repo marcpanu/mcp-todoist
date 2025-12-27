@@ -73,7 +73,6 @@ export const UPDATE_LABEL_TOOL: Tool = {
           "Whether the label should be marked as favorite (optional)",
       },
     },
-    anyOf: [{ required: ["label_id"] }, { required: ["label_name"] }],
   },
 };
 
@@ -94,7 +93,6 @@ export const DELETE_LABEL_TOOL: Tool = {
           "Name of the label to delete (optional if label_id is provided)",
       },
     },
-    anyOf: [{ required: ["label_id"] }, { required: ["label_name"] }],
   },
 };
 
