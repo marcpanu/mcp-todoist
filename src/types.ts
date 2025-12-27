@@ -481,3 +481,17 @@ export interface TranscribeVideoResponse {
   transcription: string;
   error?: string;
 }
+
+// YouTube summarization interfaces
+export interface YoutubeSummarizeArgs {
+  url: string; // YouTube video URL
+  prompt?: string; // Optional custom prompt for summarization
+}
+
+export interface YoutubeSummarizeResponse {
+  success: boolean;
+  youtube_url: string;
+  summary: string; // Generated summary text
+  prompt?: string; // Custom prompt used (if provided)
+  error?: string;
+}

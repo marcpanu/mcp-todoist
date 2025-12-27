@@ -6,6 +6,7 @@ import { COMMENT_TOOLS } from "./comment-tools.js";
 import { LABEL_TOOLS } from "./label-tools.js";
 import { COMPLETED_TASK_TOOLS } from "./completed-task-tools.js";
 import { INSTAGRAM_TOOLS } from "./instagram-tools.js";
+import { YOUTUBE_TOOLS } from "./youtube-tools.js";
 import { TEST_TOOLS } from "./test-tools.js";
 
 // Export individual tool categories
@@ -16,6 +17,7 @@ export { COMMENT_TOOLS } from "./comment-tools.js";
 export { LABEL_TOOLS } from "./label-tools.js";
 export { COMPLETED_TASK_TOOLS } from "./completed-task-tools.js";
 export { INSTAGRAM_TOOLS } from "./instagram-tools.js";
+export { YOUTUBE_TOOLS } from "./youtube-tools.js";
 export { TEST_TOOLS } from "./test-tools.js";
 
 // Export individual tools for backwards compatibility
@@ -63,6 +65,8 @@ export {
   TRANSCRIBE_VIDEO_TOOL,
 } from "./instagram-tools.js";
 
+export { YOUTUBE_SUMMARIZE_TOOL } from "./youtube-tools.js";
+
 export {
   TEST_CONNECTION_TOOL,
   TEST_ALL_FEATURES_TOOL,
@@ -78,5 +82,6 @@ export const ALL_TOOLS = [
   ...SUBTASK_TOOLS,
   ...COMPLETED_TASK_TOOLS,
   ...INSTAGRAM_TOOLS,
+  ...YOUTUBE_TOOLS,
   ...TEST_TOOLS,
 ];

@@ -22,6 +22,7 @@ import {
   GetCompletedTasksArgs,
   InstagramExtractTextArgs,
   TranscribeVideoArgs,
+  YoutubeSummarizeArgs,
 } from "./types.js";
 
 export function isCreateTaskArgs(args: unknown): args is CreateTaskArgs {
@@ -404,5 +405,18 @@ export function isTranscribeVideoArgs(
     args !== null &&
     "video_url" in args &&
     typeof (args as { video_url: string }).video_url === "string"
+  );
+}
+
+export function isYoutubeSummarizeArgs(
+  args: unknown
+): args is YoutubeSummarizeArgs {
+  return (
+    typeof args === "object" &&
+    args !== null &&
+    "url" in args &&
+    typeof (args as { url: string }).url === "string" &&
+    ((args as { url: string }).url.includes("youtube.com") ||
+      (args as { url: string }).url.includes("youtu.be"))
   );
 }

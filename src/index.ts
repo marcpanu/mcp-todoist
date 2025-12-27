@@ -40,6 +40,7 @@ import {
   isGetCompletedTasksArgs,
   isInstagramExtractTextArgs,
   isTranscribeVideoArgs,
+  isYoutubeSummarizeArgs,
 } from "./type-guards.js";
 import {
   handleCreateTask,
@@ -86,6 +87,7 @@ import {
   handleInstagramExtractText,
   handleTranscribeVideo,
 } from "./handlers/instagram-handlers.js";
+import { handleYoutubeSummarize } from "./handlers/youtube-handlers.js";
 import { createSyncAPIClient } from "./utils/sync-api-client.js";
 import { handleError } from "./errors.js";
 import type { TaskHierarchy, TaskNode } from "./types.js";
@@ -146,6 +148,16 @@ if (!OPENAI_API_KEY) {
     "Warning: OPENAI_API_KEY environment variable not set. Video transcription features will not work."
   );
 }
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+if (!GEMINI_API_KEY) {
+  console.error(
+    "Warning: GEMINI_API_KEY environment variable not set. YouTube summarization features will not work."
+  );
+}
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3-flash-preview";
+console.error(`Using Gemini model: ${GEMINI_MODEL}`);
 
 // Initialize Todoist client (with optional dry-run wrapper)
 const todoistClient = createTodoistClient(TODOIST_API_TOKEN);
@@ -424,6 +436,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           OPENAI_API_KEY
         );
         result = JSON.stringify(transcribeResult);
+        break;
+
+      case "todoist_youtube_summarize":
+        if (!isYoutubeSummarizeArgs(args)) {
+          throw new Error("Invalid arguments for todoist_youtube_summarize");
+        }
+        if (!GEMINI_API_KEY) {
+          throw new Error(
+            "GEMINI_API_KEY environment variable is required for YouTube summarization"
+          );
+        }
+        const youtubeResult = await handleYoutubeSummarize(
+          args,
+          GEMINI_API_KEY,
+          GEMINI_MODEL
+        );
+        result = JSON.stringify(youtubeResult);
         break;
 
       case "todoist_test_connection":

@@ -45,8 +45,9 @@
   },
   "homepage": "https://github.com/greirson/mcp-todoist#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.17.1",
     "@doist/todoist-api-typescript": "^5.1.1",
+    "@google/generative-ai": "^0.24.1",
+    "@modelcontextprotocol/sdk": "1.17.1",
     "apify-client": "^2.10.1",
     "openai": "^4.77.3"
   },
