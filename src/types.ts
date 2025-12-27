@@ -38,6 +38,7 @@ export interface UpdateTaskArgs {
 export interface TaskNameArgs {
   task_name?: string;
   task_id?: string;
+  task_ids?: string[];
 }
 
 export interface GetSectionsArgs {

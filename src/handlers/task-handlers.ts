@@ -532,22 +532,50 @@ export async function handleCompleteTask(
   todoistClient: TodoistApi,
   args: any
 ): Promise<string> {
-  // Handle both snake_case and camelCase
+  // Check if we're in dry-run mode
+  const isDryRun = process.env.DRYRUN === "true";
+  const prefix = isDryRun ? "[DRY-RUN] " : "";
+
+  // Clear cache since we're completing
+  taskCache.clear();
+
+  // Check for batch mode (task_ids array)
+  const taskIds = args.task_ids || args.taskIds;
+  if (taskIds && Array.isArray(taskIds)) {
+    // Batch mode: complete multiple tasks by IDs
+    const results: string[] = [];
+    const errors: string[] = [];
+
+    for (const taskId of taskIds) {
+      try {
+        const task = await todoistClient.getTask(taskId);
+        await todoistClient.closeTask(taskId);
+        results.push(`✓ ${task.content} (${taskId})`);
+      } catch (error) {
+        errors.push(`✗ ${taskId}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
+    const summary = [
+      `${prefix}Completed ${results.length} of ${taskIds.length} tasks`,
+      results.length > 0 ? `\nSucceeded:\n${results.join("\n")}` : "",
+      errors.length > 0 ? `\nFailed:\n${errors.join("\n")}` : "",
+    ]
+      .filter(Boolean)
+      .join("");
+
+    return summary;
+  }
+
+  // Single mode: complete one task by ID or name
   const { taskId, taskName } = extractTaskIdentifiers(args);
 
   // Validate that at least one identifier is provided
   validateTaskIdentifier(taskId, taskName);
 
-  // Clear cache since we're completing
-  taskCache.clear();
-
   const matchingTask = await findTaskByIdOrName(todoistClient, args);
 
   await todoistClient.closeTask(matchingTask.id);
-
-  // Check if we're in dry-run mode
-  const isDryRun = process.env.DRYRUN === "true";
-  const prefix = isDryRun ? "[DRY-RUN] " : "";
 
   return `${prefix}Successfully completed task: "${matchingTask.content}"`;
 }

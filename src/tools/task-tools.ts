@@ -196,19 +196,25 @@ export const DELETE_TASK_TOOL: Tool = {
 export const COMPLETE_TASK_TOOL: Tool = {
   name: "todoist_task_complete",
   description:
-    "Mark a task as complete found by ID or partial name search (case-insensitive)",
+    "Mark one or more tasks as complete. Supports single task (by ID or name) or multiple tasks (by array of IDs)",
   inputSchema: {
     type: "object",
     properties: {
       task_id: {
         type: "string",
         description:
-          "Task ID to complete (optional, takes precedence over task_name)",
+          "Single task ID to complete (optional, takes precedence over task_name and task_ids)",
       },
       task_name: {
         type: "string",
         description:
           "Partial task name to search for completion (used if task_id not provided)",
+      },
+      task_ids: {
+        type: "array",
+        items: { type: "string" },
+        description:
+          "Array of task IDs to complete in batch (used if task_id and task_name not provided)",
       },
     },
     required: [],

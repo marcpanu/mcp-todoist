@@ -91,7 +91,7 @@ export function isTaskNameArgs(args: unknown): args is TaskNameArgs {
 
   const obj = args as Record<string, unknown>;
 
-  // Must have either task_id/taskId or task_name/taskName
+  // Must have either task_id/taskId, task_name/taskName, or task_ids/taskIds
   // Check both snake_case and camelCase since MCP might transform them
   const hasTaskId =
     ("task_id" in obj && typeof obj.task_id === "string") ||
@@ -99,8 +99,15 @@ export function isTaskNameArgs(args: unknown): args is TaskNameArgs {
   const hasTaskName =
     ("task_name" in obj && typeof obj.task_name === "string") ||
     ("taskName" in obj && typeof obj.taskName === "string");
+  const hasTaskIds =
+    ("task_ids" in obj &&
+      Array.isArray(obj.task_ids) &&
+      obj.task_ids.every((id) => typeof id === "string")) ||
+    ("taskIds" in obj &&
+      Array.isArray(obj.taskIds) &&
+      (obj.taskIds as unknown[]).every((id) => typeof id === "string"));
 
-  return hasTaskId || hasTaskName;
+  return hasTaskId || hasTaskName || hasTaskIds;
 }
 
 export function isGetProjectsArgs(
