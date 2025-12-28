@@ -79,10 +79,9 @@ export class SyncAPIClient {
    */
   async getCompletedTasks(): Promise<SyncCompletedTask[]> {
     try {
-      const response =
-        await this.makeRequest<SyncAPIResponse<SyncCompletedTask>>(
-          "/completed/get_all?annotate_items=true"
-        );
+      const response = await this.makeRequest<
+        SyncAPIResponse<SyncCompletedTask>
+      >("/completed/get_all?annotate_items=true");
 
       // Extract items array from response
       // All items from /completed/get_all are completed tasks

@@ -27,10 +27,7 @@ export async function handleYoutubeSummarize(
     });
 
     // Basic YouTube URL validation
-    if (
-      !cleanUrl.includes("youtube.com") &&
-      !cleanUrl.includes("youtu.be")
-    ) {
+    if (!cleanUrl.includes("youtube.com") && !cleanUrl.includes("youtu.be")) {
       return {
         success: false,
         youtube_url: args.url,

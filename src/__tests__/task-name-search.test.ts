@@ -53,6 +53,12 @@ describe("Task Name Search Functionality", () => {
       getTasks: jest.fn().mockResolvedValue(mockTasks),
       getTasksByFilter: jest.fn(),
       getTask: jest.fn(),
+      getProjects: jest.fn().mockResolvedValue({
+        results: [{ id: "project1", name: "Test Project" }],
+      }),
+      getSections: jest.fn().mockResolvedValue({
+        results: [],
+      }),
     } as any;
 
     // Clear module cache

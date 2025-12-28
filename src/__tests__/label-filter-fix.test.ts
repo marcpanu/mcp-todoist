@@ -55,6 +55,12 @@ describe("Label Filter Fix (Issue #35)", () => {
     mockTodoistClient.getTasks = jest.fn().mockResolvedValue(mockTasks);
     mockTodoistClient.getTasksByFilter = jest.fn().mockResolvedValue(mockTasks);
     mockTodoistClient.getLabels = jest.fn().mockResolvedValue(mockLabels);
+    mockTodoistClient.getProjects = jest.fn().mockResolvedValue({
+      results: [{ id: "project1", name: "Test Project" }],
+    });
+    mockTodoistClient.getSections = jest.fn().mockResolvedValue({
+      results: [],
+    });
   });
 
   describe("label_id parameter", () => {

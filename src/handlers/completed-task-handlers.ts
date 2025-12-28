@@ -69,8 +69,9 @@ function formatCompletedTaskForDisplay(
     2: "P3",
     1: "P4 (Lowest)",
   };
-  const priorityInfo =
-    item?.priority ? `\n  Priority: ${priorityMap[item.priority]}` : "";
+  const priorityInfo = item?.priority
+    ? `\n  Priority: ${priorityMap[item.priority]}`
+    : "";
 
   // Labels
   const labelsInfo =
@@ -245,10 +246,9 @@ export async function handleGetCompletedTasks(
         const sectionName = task.v2_section_id
           ? sectionMap.get(task.v2_section_id) || null
           : null;
-        const parentTaskName =
-          task.item_object?.v2_parent_id
-            ? taskMap.get(task.item_object.v2_parent_id) || null
-            : null;
+        const parentTaskName = task.item_object?.v2_parent_id
+          ? taskMap.get(task.item_object.v2_parent_id) || null
+          : null;
         return formatCompletedTaskForDisplay(
           task,
           projectName,

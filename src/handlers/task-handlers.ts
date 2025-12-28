@@ -205,20 +205,23 @@ export async function handleGetTasks(
     try {
       const task = await todoistClient.getTask(args.task_id);
 
-      // Build name maps for display
-      const projectMap = await buildProjectIdToNameMap(todoistClient);
-      const sectionMap = await buildSectionIdToNameMap(todoistClient);
-      const taskMap = await buildTaskIdToNameMap(todoistClient);
+      // Lazy-load name maps only if needed
+      let projectName: string | null = null;
+      let sectionName: string | null = null;
+      let parentTaskName: string | null = null;
 
-      const projectName = task.projectId
-        ? projectMap.get(task.projectId) || null
-        : null;
-      const sectionName = task.sectionId
-        ? sectionMap.get(task.sectionId) || null
-        : null;
-      const parentTaskName = task.parentId
-        ? taskMap.get(task.parentId) || null
-        : null;
+      if (task.projectId) {
+        const projectMap = await buildProjectIdToNameMap(todoistClient);
+        projectName = projectMap.get(task.projectId) || null;
+      }
+      if (task.sectionId) {
+        const sectionMap = await buildSectionIdToNameMap(todoistClient);
+        sectionName = sectionMap.get(task.sectionId) || null;
+      }
+      if (task.parentId) {
+        const taskMap = await buildTaskIdToNameMap(todoistClient);
+        parentTaskName = taskMap.get(task.parentId) || null;
+      }
 
       return formatTaskForDisplay(
         task as TodoistTask,
@@ -387,23 +390,39 @@ export async function handleGetTasks(
     return "No tasks found matching the criteria";
   }
 
-  // Build name maps for display
-  const projectMap = await buildProjectIdToNameMap(todoistClient);
-  const sectionMap = await buildSectionIdToNameMap(todoistClient);
-  const taskMap = await buildTaskIdToNameMap(todoistClient);
+  // Lazy-load name maps only if needed
+  let projectMap: Map<string, string> | null = null;
+  let sectionMap: Map<string, string> | null = null;
+  let taskMap: Map<string, string> | null = null;
+
+  // Check if any task has projectId, sectionId, or parentId
+  const hasProjectIds = filteredTasks.some((task) => task.projectId);
+  const hasSectionIds = filteredTasks.some((task) => task.sectionId);
+  const hasParentIds = filteredTasks.some((task) => task.parentId);
+
+  if (hasProjectIds) {
+    projectMap = await buildProjectIdToNameMap(todoistClient);
+  }
+  if (hasSectionIds) {
+    sectionMap = await buildSectionIdToNameMap(todoistClient);
+  }
+  if (hasParentIds) {
+    taskMap = await buildTaskIdToNameMap(todoistClient);
+  }
 
   // Format tasks with resolved names
   const taskList = filteredTasks
     .map((task) => {
-      const projectName = task.projectId
-        ? projectMap.get(task.projectId) || null
-        : null;
-      const sectionName = task.sectionId
-        ? sectionMap.get(task.sectionId) || null
-        : null;
-      const parentTaskName = task.parentId
-        ? taskMap.get(task.parentId) || null
-        : null;
+      const projectName =
+        task.projectId && projectMap
+          ? projectMap.get(task.projectId) || null
+          : null;
+      const sectionName =
+        task.sectionId && sectionMap
+          ? sectionMap.get(task.sectionId) || null
+          : null;
+      const parentTaskName =
+        task.parentId && taskMap ? taskMap.get(task.parentId) || null : null;
       return formatTaskForDisplay(
         task,
         projectName,
