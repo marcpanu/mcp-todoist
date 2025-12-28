@@ -16,7 +16,7 @@ export const YOUTUBE_SUMMARIZE_TOOL: Tool = {
       prompt: {
         type: "string",
         description:
-          "Optional custom prompt for summarization. If not provided, will generate a general summary of the video content.",
+          "ONLY use if user explicitly requests specific analysis (e.g., 'focus on technical details'). Omit this parameter for standard video summary.",
       },
     },
     required: ["url"],
