@@ -1,8 +1,13 @@
+import log from "@apify/log";
 import { ApifyClient } from "apify-client";
 import type {
   ApifyInstagramResponse,
   InstagramExtractTextResponse,
 } from "../types.js";
+
+// Suppress Apify's internal logging - it writes colored output to stdout
+// which corrupts the MCP stdio JSON-RPC communication channel
+log.setLevel(log.LEVELS.OFF);
 
 /**
  * Creates and configures an Apify client for Instagram scraping
