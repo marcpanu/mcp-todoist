@@ -30,12 +30,6 @@ const completedTaskCache = cacheManager.getOrCreateCache<SyncCompletedTask[]>(
 /**
  * Formats a completed task for display with full metadata from item_object
  * With annotate_items=true, includes description, labels, due dates, priority, and parent task
- * Uses v2_* fields to match REST API v2 ID format (alphanumeric) for consistency
- *
- * @param task - The completed task to format
- * @param projectName - Optional project name to display with ID
- * @param sectionName - Optional section name to display with ID
- * @param parentTaskName - Optional parent task name to display with ID
  */
 function formatCompletedTaskForDisplay(
   task: SyncCompletedTask,
@@ -46,23 +40,19 @@ function formatCompletedTaskForDisplay(
   const completedDate = new Date(task.completed_at).toLocaleString();
   const item = task.item_object;
 
-  // Format project display
   const projectDisplayName = projectName || "Unknown";
-  const projectInfo = `\n  Project: ${projectDisplayName} (${task.v2_project_id})`;
+  const projectInfo = `\n  Project: ${projectDisplayName} (${task.project_id})`;
 
-  // Format section display
   let sectionInfo = "";
-  if (task.v2_section_id) {
+  if (task.section_id) {
     const sectionDisplayName = sectionName || "Unknown";
-    sectionInfo = `\n  Section: ${sectionDisplayName} (${task.v2_section_id})`;
+    sectionInfo = `\n  Section: ${sectionDisplayName} (${task.section_id})`;
   }
 
-  // Description
   const descriptionInfo = item?.description
     ? `\n  Description: ${item.description}`
     : "";
 
-  // Priority (convert from API format: 4=P1, 3=P2, 2=P3, 1=P4)
   const priorityMap: { [key: number]: string } = {
     4: "P1 (Highest)",
     3: "P2",
@@ -73,31 +63,26 @@ function formatCompletedTaskForDisplay(
     ? `\n  Priority: ${priorityMap[item.priority]}`
     : "";
 
-  // Labels
   const labelsInfo =
     item?.labels && item.labels.length > 0
       ? `\n  Labels: ${item.labels.join(", ")}`
       : "";
 
-  // Original due date
   const dueInfo = item?.due
     ? `\n  Due Date: ${item.due.string} (${item.due.date})${item.due.is_recurring ? " [Recurring]" : ""}`
     : "";
 
-  // Parent task
-  const parentInfo = item?.v2_parent_id
-    ? `\n  Parent Task: ${parentTaskName || "Unknown"} (${item.v2_parent_id})`
+  const parentInfo = item?.parent_id
+    ? `\n  Parent Task: ${parentTaskName || "Unknown"} (${item.parent_id})`
     : "";
 
   return `• ${task.content}
-  Task ID: ${task.v2_task_id}
+  Task ID: ${task.task_id}
   Completed: ${completedDate}${projectInfo}${sectionInfo}${descriptionInfo}${priorityInfo}${labelsInfo}${dueInfo}${parentInfo}`;
 }
 
 /**
  * Filters completed tasks based on search criteria
- * With annotate_items=true, can filter by labels, due dates, and description
- * Uses v2_project_id to match REST API v2 ID format (alphanumeric)
  */
 function filterCompletedTasks(
   tasks: SyncCompletedTask[],
@@ -105,11 +90,8 @@ function filterCompletedTasks(
 ): SyncCompletedTask[] {
   let filtered = tasks;
 
-  // Filter by project (using v2_project_id to match REST API v2 format)
   if (args.project_id) {
-    filtered = filtered.filter(
-      (task) => task.v2_project_id === args.project_id
-    );
+    filtered = filtered.filter((task) => task.project_id === args.project_id);
   }
 
   // Filter by labels
@@ -172,7 +154,7 @@ function filterCompletedTasks(
 }
 
 /**
- * Handles retrieval of completed tasks from Sync API with comprehensive filtering
+ * Handles retrieval of completed tasks with comprehensive filtering
  */
 export async function handleGetCompletedTasks(
   todoistClient: TodoistApi,
@@ -180,7 +162,6 @@ export async function handleGetCompletedTasks(
   args: GetCompletedTasksArgs
 ): Promise<string> {
   return ErrorHandler.wrapAsync("get completed tasks", async () => {
-    // Validate input
     validateProjectId(args.project_id);
     validateDateString(args.completed_after, "completed_after");
     validateDateString(args.completed_before, "completed_before");
@@ -188,10 +169,8 @@ export async function handleGetCompletedTasks(
     validateDateString(args.due_before, "due_before");
     validateLimit(args.limit);
 
-    // Resolve project name to ID if needed
     let projectId = args.project_id;
     if (projectId && !/^\d+$/.test(projectId)) {
-      // It's a project name, resolve to ID
       try {
         projectId = await resolveProjectIdentifier(todoistClient, projectId);
       } catch {
@@ -199,7 +178,6 @@ export async function handleGetCompletedTasks(
       }
     }
 
-    // Create cache key based on all available filters
     const cacheKey = JSON.stringify({
       project: projectId,
       label: args.label_id,
@@ -211,14 +189,11 @@ export async function handleGetCompletedTasks(
       limit: args.limit,
     });
 
-    // Check cache
     let completedTasks = completedTaskCache.get(cacheKey);
 
     if (!completedTasks) {
-      // Fetch from Sync API (with annotate_items=true for full metadata)
       const allCompletedTasks = await syncClient.getCompletedTasks();
 
-      // Apply filters with resolved project
       const filteredArgs: GetCompletedTasksArgs = {
         ...args,
         project_id: projectId,
@@ -226,7 +201,6 @@ export async function handleGetCompletedTasks(
 
       completedTasks = filterCompletedTasks(allCompletedTasks, filteredArgs);
 
-      // Cache the results
       completedTaskCache.set(cacheKey, completedTasks);
     }
 
@@ -234,21 +208,41 @@ export async function handleGetCompletedTasks(
       return "No completed tasks found matching the criteria";
     }
 
-    // Build name maps for display
-    const projectMap = await buildProjectIdToNameMap(todoistClient);
-    const sectionMap = await buildSectionIdToNameMap(todoistClient);
-    const taskMap = await buildTaskIdToNameMap(todoistClient);
+    // Lazy-load name maps only if needed
+    let projectMap: Map<string, string> | null = null;
+    let sectionMap: Map<string, string> | null = null;
+    let taskMap: Map<string, string> | null = null;
 
-    // Format tasks with resolved names
+    const hasProjectIds = completedTasks.some((task) => task.project_id);
+    const hasSectionIds = completedTasks.some((task) => task.section_id);
+    const hasParentIds = completedTasks.some(
+      (task) => task.item_object?.parent_id
+    );
+
+    if (hasProjectIds) {
+      projectMap = await buildProjectIdToNameMap(todoistClient);
+    }
+    if (hasSectionIds) {
+      sectionMap = await buildSectionIdToNameMap(todoistClient);
+    }
+    if (hasParentIds) {
+      taskMap = await buildTaskIdToNameMap(todoistClient);
+    }
+
     const taskList = completedTasks
       .map((task) => {
-        const projectName = projectMap.get(task.v2_project_id) || null;
-        const sectionName = task.v2_section_id
-          ? sectionMap.get(task.v2_section_id) || null
-          : null;
-        const parentTaskName = task.item_object?.v2_parent_id
-          ? taskMap.get(task.item_object.v2_parent_id) || null
-          : null;
+        const projectName =
+          task.project_id && projectMap
+            ? projectMap.get(task.project_id) || null
+            : null;
+        const sectionName =
+          task.section_id && sectionMap
+            ? sectionMap.get(task.section_id) || null
+            : null;
+        const parentTaskName =
+          task.item_object?.parent_id && taskMap
+            ? taskMap.get(task.item_object.parent_id) || null
+            : null;
         return formatCompletedTaskForDisplay(
           task,
           projectName,

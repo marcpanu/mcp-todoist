@@ -5,7 +5,7 @@ export const GET_COMPLETED_TASKS_TOOL: Tool = {
   name: "todoist_completed_tasks_get",
   description:
     "Get completed tasks from Todoist with comprehensive filtering options. " +
-    "This tool uses the Sync API v9 to retrieve tasks that have been marked as complete. " +
+    "Retrieves tasks that have been marked as complete. " +
     "Supports filtering by project, labels, completion date, due date, and content search.",
   inputSchema: {
     type: "object",

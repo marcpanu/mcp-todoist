@@ -1,6 +1,6 @@
 import type { SyncCompletedTask, SyncAPIResponse } from "../types.js";
 
-const SYNC_API_BASE_URL = "https://api.todoist.com/sync/v9";
+const SYNC_API_BASE_URL = "https://api.todoist.com/api/v1";
 
 /**
  * Error class for Sync API specific errors
@@ -18,7 +18,7 @@ export class SyncAPIError extends Error {
 }
 
 /**
- * Sync API Client for accessing completed tasks via Todoist Sync API v9
+ * Todoist API v1 client for accessing completed tasks
  * Uses native fetch for HTTP requests (Node.js 18+)
  */
 export class SyncAPIClient {
@@ -73,22 +73,16 @@ export class SyncAPIClient {
   }
 
   /**
-   * Retrieves all completed tasks from Sync API
-   * All items returned from this endpoint are completed tasks by definition
+   * Retrieves all completed tasks from Todoist API v1
    * Uses annotate_items=true to get full task details including description, labels, due dates, etc.
    */
   async getCompletedTasks(): Promise<SyncCompletedTask[]> {
     try {
       const response = await this.makeRequest<
         SyncAPIResponse<SyncCompletedTask>
-      >("/completed/get_all?annotate_items=true");
+      >("/tasks/completed?annotate_items=true");
 
-      // Extract items array from response
-      // All items from /completed/get_all are completed tasks
-      // With annotate_items=true, each item includes item_object with full task details
-      const items = response.items || [];
-
-      return items;
+      return response.items || [];
     } catch (error) {
       if (error instanceof SyncAPIError) {
         throw error;
@@ -100,33 +94,30 @@ export class SyncAPIClient {
   }
 
   /**
-   * Retrieves completed tasks for specific parent task/project IDs
-   * @param parentIds - Array of parent task or project IDs
+   * Retrieves completed tasks for a specific project
+   * @param projectId - Project ID to filter by
    */
-  async getCompletedTasksByIds(
-    parentIds: string[]
+  async getCompletedTasksByProject(
+    projectId: string
   ): Promise<SyncCompletedTask[]> {
-    if (!parentIds || parentIds.length === 0) {
-      throw new Error("At least one parent ID must be provided");
+    if (!projectId) {
+      throw new Error("Project ID must be provided");
     }
 
     try {
-      // The Sync API endpoint expects IDs as query parameters
-      const idsParam = parentIds.join(",");
       const response = await this.makeRequest<
         SyncAPIResponse<SyncCompletedTask>
-      >(`/completed/get_by_ids?ids=${encodeURIComponent(idsParam)}`);
+      >(
+        `/tasks/completed?annotate_items=true&project_id=${encodeURIComponent(projectId)}`
+      );
 
-      const items = response.items || [];
-
-      // All items from this endpoint are completed tasks
-      return items;
+      return response.items || [];
     } catch (error) {
       if (error instanceof SyncAPIError) {
         throw error;
       }
       throw new SyncAPIError(
-        `Failed to fetch completed tasks by IDs: ${(error as Error).message}`
+        `Failed to fetch completed tasks by project: ${(error as Error).message}`
       );
     }
   }

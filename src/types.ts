@@ -374,8 +374,7 @@ export interface TaskHierarchy {
   originalTaskId?: string;
 }
 
-// Sync API v9 interfaces for completed tasks
-// Note: The Sync API returns a simplified structure for completed items
+// Todoist API v1 interfaces for completed tasks
 export interface SyncCompletedTask {
   id: string; // Completion record ID
   task_id: string; // The actual task ID
@@ -393,12 +392,10 @@ export interface SyncCompletedTask {
     due?: { date: string; string: string; is_recurring: boolean } | null;
     priority: number;
     parent_id?: string | null;
-    v2_parent_id?: string | null;
+    project_id?: string;
+    section_id?: string | null;
   } | null;
   meta_data?: unknown | null; // Additional metadata
-  v2_task_id: string; // V2 API task ID (required)
-  v2_project_id: string; // V2 API project ID (required)
-  v2_section_id?: string; // V2 API section ID (optional)
 }
 
 export interface GetCompletedTasksArgs {
@@ -414,8 +411,8 @@ export interface GetCompletedTasksArgs {
 
 export interface SyncAPIResponse<T> {
   items?: T[];
-  sync_token?: string;
-  full_sync?: boolean;
+  projects?: Record<string, { name: string; [key: string]: unknown }>;
+  sections?: Record<string, { name: string; [key: string]: unknown }>;
 }
 
 // Instagram scraping interfaces

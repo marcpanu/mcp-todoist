@@ -45,11 +45,13 @@ An MCP (Model Context Protocol) server that connects Claude with Todoist for com
 ## Features
 
 * **Complete Task Management**: Create, read, update, delete, and complete tasks with full attribute support
+* **Completed Tasks Retrieval**: Access completed/archived tasks with filtering by project, labels, date ranges, and content
 * **Hierarchical Subtasks**: Create subtasks, convert tasks to subtasks, promote subtasks, and view task hierarchies with completion tracking
 * **Bulk Operations**: Efficiently create, update, delete, or complete multiple tasks at once
 * **Comment System**: Add comments to tasks and retrieve comments with attachment support
 * **Label Management**: Full CRUD operations for labels with usage statistics and analytics
 * **Project & Section Organization**: Create and manage projects and sections
+* **Media Tools**: Extract text from Instagram posts, transcribe videos, and summarize YouTube videos
 * **Dry-Run Mode**: Test automations and operations without making real changes
 * **Enhanced Testing**: Basic API validation and comprehensive CRUD testing with automatic cleanup
 * **Smart Discovery**: List projects and sections to find IDs for organization
@@ -209,7 +211,7 @@ Priority: 4 (Normal)
 
 ### Supported Operations
 
-All 28 MCP tools support dry-run mode:
+All MCP tools support dry-run mode:
 - Task creation, updates, completion, and deletion
 - Subtask operations and hierarchy changes
 - Bulk operations across multiple tasks
@@ -223,7 +225,7 @@ Remove the `DRYRUN` environment variable or set it to `false`, then restart Clau
 
 ## Tools Overview
 
-The server provides 28 tools organized by entity type:
+The server provides 32 tools organized by entity type:
 
 ### Task Management
 - **Todoist Task Create**: Create new tasks with full attribute support
@@ -231,6 +233,9 @@ The server provides 28 tools organized by entity type:
 - **Todoist Task Update**: Update existing tasks (found by ID or partial name search)
 - **Todoist Task Complete**: Mark tasks as complete (found by ID or partial name search)
 - **Todoist Task Delete**: Remove tasks (found by ID or partial name search)
+
+### Completed Tasks
+- **Todoist Completed Tasks Get**: Retrieve completed/archived tasks with filtering by project, labels, completion date range, due date range, and content search
 
 ### Subtask Management
 - **Todoist Subtask Create**: Create subtasks under parent tasks with full attribute support
@@ -263,6 +268,11 @@ The server provides 28 tools organized by entity type:
 ### Section Management
 - **Todoist Section Create**: Create sections within projects
 - **Todoist Section Get**: List sections within projects
+
+### Media Tools
+- **Todoist Instagram Extract Text**: Extract text and comments from Instagram posts
+- **Todoist Transcribe Video**: Transcribe video content from URLs
+- **Todoist YouTube Summarize**: Summarize YouTube videos using AI
 
 ### Testing & Validation
 - **Todoist Test Connection**: Validate API token and test connectivity
@@ -345,6 +355,21 @@ The server provides 28 tools organized by entity type:
 "Update the 'Work' label to be blue and mark as favorite"
 "Delete the unused 'Old Project' label"
 "Get usage statistics for all my labels"
+```
+
+### Completed Tasks
+```
+"Show me tasks I completed this week"
+"Get completed tasks in my Work project"
+"Find completed tasks containing 'review' from last month"
+"Show tasks completed between 2024-12-01 and 2024-12-31"
+```
+
+### Media Tools
+```
+"Extract text from this Instagram post: https://instagram.com/p/..."
+"Transcribe this video: https://example.com/video.mp4"
+"Summarize this YouTube video: https://youtube.com/watch?v=..."
 ```
 
 ### Task Discovery
@@ -472,9 +497,12 @@ The codebase follows a clean, modular architecture designed for maintainability 
 - **`src/tools/`**: Domain-specific MCP tool definitions organized by functionality:
   - `task-tools.ts` - Task management (9 tools)
   - `subtask-tools.ts` - Subtask operations (5 tools)
+  - `completed-task-tools.ts` - Completed task retrieval (1 tool)
   - `project-tools.ts` - Project/section management (4 tools)
   - `comment-tools.ts` - Comment operations (2 tools)
   - `label-tools.ts` - Label management (5 tools)
+  - `instagram-tools.ts` - Instagram and video transcription (2 tools)
+  - `youtube-tools.ts` - YouTube summarization (1 tool)
   - `test-tools.ts` - Testing and validation (3 tools)
   - `index.ts` - Centralized exports
 
@@ -482,9 +510,12 @@ The codebase follows a clean, modular architecture designed for maintainability 
 - **`src/handlers/`**: Domain-separated business logic modules:
   - `task-handlers.ts` - Task CRUD and bulk operations
   - `subtask-handlers.ts` - Hierarchical task management
+  - `completed-task-handlers.ts` - Completed task retrieval and filtering
   - `project-handlers.ts` - Project and section operations
   - `comment-handlers.ts` - Comment creation and retrieval
   - `label-handlers.ts` - Label CRUD and statistics
+  - `instagram-handlers.ts` - Instagram extraction and video transcription
+  - `youtube-handlers.ts` - YouTube video summarization
   - `test-handlers.ts` - API testing infrastructure
   - `test-handlers-enhanced/` - Comprehensive CRUD testing framework
 
@@ -494,6 +525,7 @@ The codebase follows a clean, modular architecture designed for maintainability 
   - `error-handling.ts` - Centralized error management
   - `parameter-transformer.ts` - MCP to Todoist SDK parameter format conversion
   - `dry-run-wrapper.ts` - Dry-run mode implementation
+  - `sync-api-client.ts` - HTTP client for completed tasks endpoint (Todoist API v1)
 
 ## Changelog
 
