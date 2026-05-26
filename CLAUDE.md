@@ -41,9 +41,12 @@ The codebase follows a clean, domain-driven architecture with focused modules fo
 - **`src/tools/`**: Domain-specific MCP tool definitions (refactored from single 863-line file):
   - `task-tools.ts` - Task management tools (CREATE, READ, UPDATE, DELETE, COMPLETE + bulk operations)
   - `subtask-tools.ts` - Subtask management tools (hierarchical task operations)
+  - `completed-task-tools.ts` - Completed task retrieval tool
   - `project-tools.ts` - Project and section management tools
   - `comment-tools.ts` - Comment creation and retrieval tools
   - `label-tools.ts` - Label CRUD and statistics tools
+  - `instagram-tools.ts` - Instagram extraction and video transcription tools
+  - `youtube-tools.ts` - YouTube summarization tool
   - `test-tools.ts` - Testing and validation tools
   - `index.ts` - Centralized exports with backward compatibility
 
@@ -51,9 +54,12 @@ The codebase follows a clean, domain-driven architecture with focused modules fo
 - **`src/handlers/`**: Domain-separated business logic:
   - `task-handlers.ts` - Task CRUD operations and bulk operations
   - `subtask-handlers.ts` - Hierarchical task management and parent-child relationships
+  - `completed-task-handlers.ts` - Completed task retrieval and filtering
   - `project-handlers.ts` - Project and section operations
   - `comment-handlers.ts` - Comment creation and retrieval operations
   - `label-handlers.ts` - Label CRUD operations and usage statistics
+  - `instagram-handlers.ts` - Instagram extraction and video transcription
+  - `youtube-handlers.ts` - YouTube video summarization
   - `test-handlers.ts` - Testing infrastructure for API validation and performance monitoring
 
 #### Enhanced Testing Framework
@@ -70,10 +76,11 @@ The codebase follows a clean, domain-driven architecture with focused modules fo
   - `api-helpers.ts` - API response handling and formatting utilities
   - `error-handling.ts` - Centralized error management with context tracking
   - `dry-run-wrapper.ts` - Dry-run mode implementation for safe testing and validation
+  - `sync-api-client.ts` - HTTP client for completed tasks endpoint (Todoist API v1)
 
 ### Tool Architecture
 
-The server exposes 28 tools organized by entity type with standardized naming convention using underscores (MCP-compliant):
+The server exposes 32 tools organized by entity type with standardized naming convention using underscores (MCP-compliant):
 
 **Task Management:**
 - `todoist_task_create` - Creates new tasks with full attribute support
@@ -88,6 +95,9 @@ The server exposes 28 tools organized by entity type with standardized naming co
 - `todoist_task_convert_to_subtask` - Converts existing tasks to subtasks of another task
 - `todoist_subtask_promote` - Promotes subtasks to main tasks (removes parent relationship)
 - `todoist_task_hierarchy_get` - Retrieves task hierarchies with completion percentage tracking
+
+**Completed Tasks:**
+- `todoist_completed_tasks_get` - Retrieves completed/archived tasks with filtering by project, labels, date ranges, and content
 
 **Bulk Task Operations:**
 - `todoist_tasks_bulk_create` - Creates multiple tasks at once for improved efficiency
@@ -113,6 +123,11 @@ The server exposes 28 tools organized by entity type with standardized naming co
 **Section Management:**
 - `todoist_section_create` - Creates sections within projects
 - `todoist_section_get` - Lists sections within projects
+
+**Media Tools:**
+- `todoist_instagram_extract_text` - Extracts text and comments from Instagram posts
+- `todoist_transcribe_video` - Transcribes video content from URLs via OpenAI Whisper
+- `todoist_youtube_summarize` - Summarizes YouTube videos via Google Gemini
 
 **Testing Infrastructure:**
 - `todoist_test_connection` - Quick API token validation and connection test
@@ -180,7 +195,7 @@ Complete simulation framework for safe testing and validation:
 - **Mock Response Generation**: Returns realistic mock data with generated IDs for mutation operations
 - **Detailed Logging**: Clear `[DRY-RUN]` prefixes show exactly what operations would perform
 - **Factory Pattern**: `createTodoistClient()` function automatically wraps client based on environment
-- **Comprehensive Coverage**: All 28 MCP tools support dry-run mode with full validation
+- **Comprehensive Coverage**: All MCP tools support dry-run mode with full validation
 - **Type Safety**: Full TypeScript support with proper type definitions for all dry-run operations
 
 ### Data Flow Pattern
@@ -273,7 +288,7 @@ Due to evolving Todoist API types, the codebase uses defensive programming patte
 - **Cache Strategy**: GET operations are cached for 30 seconds; mutation operations (create/update/delete) clear the cache
 - **Dry-Run Mode**: Enable with `DRYRUN=true` environment variable for safe testing and validation
   - Uses real API data for validation while simulating mutations
-  - All 28 MCP tools support dry-run mode with comprehensive logging
+  - All MCP tools support dry-run mode with comprehensive logging
   - Perfect for testing automations, learning the API, and safe experimentation
 - **Task Search**: Update/delete/complete operations support both:
   - **Task ID**: Direct lookup by ID (more reliable, takes precedence)
@@ -310,7 +325,7 @@ The codebase includes a comprehensive development plan in `todoist-mcp-dev-prd.m
 - ✅ **Phase 3**: Subtask Management (v0.8.0) - Hierarchical task management with parent-child relationships
   - ✅ **Subtask Handlers**: Created `src/handlers/subtask-handlers.ts` with full CRUD operations for hierarchical tasks
   - ✅ **Enhanced Testing**: Built `src/handlers/test-handlers-enhanced.ts` with comprehensive CRUD testing and automatic cleanup
-  - ✅ **New MCP Tools**: Added 5 subtask management tools (total: 28 tools)
+  - ✅ **New MCP Tools**: Added 5 subtask management tools
   - ✅ **Type System Enhancement**: Extended type definitions for subtask operations and hierarchy management
   - ✅ **API Compatibility**: Implemented workarounds for Todoist API limitations using delete & recreate patterns
 - ✅ **Dry-Run Mode Implementation**: Complete simulation framework for safe testing and validation
@@ -321,37 +336,18 @@ The codebase includes a comprehensive development plan in `todoist-mcp-dev-prd.m
   - ✅ **Factory Pattern Integration**: `createTodoistClient()` automatically handles dry-run wrapping
   - ✅ **Test Coverage**: Comprehensive test suite in `src/__tests__/dry-run-wrapper.test.ts`
 
+- ✅ **Phase 4**: Completed Tasks Retrieval (v0.9.0) - Todoist API v1 integration for accessing completed tasks
+  - ✅ **HTTP Client**: `src/utils/sync-api-client.ts` for direct calls to `/api/v1/tasks/completed`
+    - The official SDK only exposes date-bounded endpoints (`by_completion_date`, `by_due_date`) with required `since`/`until` params
+    - The hand-rolled client hits `GET /api/v1/tasks/completed` which returns all completed tasks without date constraints
+    - Uses `annotate_items=true` for full task metadata (description, labels, due dates, priority)
+  - ✅ **Completed Task Handler**: `src/handlers/completed-task-handlers.ts` with client-side filtering
+  - ✅ **MCP Tool**: `todoist_completed_tasks_get` with filtering by project, labels, date ranges, content
+  - ✅ **Type Definitions**: `SyncCompletedTask` and `SyncAPIResponse` interfaces in `src/types.ts`
+  - ✅ **Cache Integration**: 60-second TTL via CacheManager
+  - ✅ **Dry-Run Support**: Integrated with dry-run wrapper
+
 **Planned Future Phases:**
-- **Phase 4**: Completed Tasks Retrieval (v0.9.0) - Todoist Sync API v9 integration for accessing completed tasks
-  - **Motivation**: REST API v2 cannot retrieve completed/archived tasks - only active tasks
-  - **Solution**: Hybrid architecture - add Sync API v9 client alongside existing REST API client
-  - **Sync API Client**: Create `src/utils/sync-api-client.ts` for raw HTTP calls to Sync API endpoints
-    - Primary endpoint: `GET /sync/v9/completed/get_all` - retrieves all completed items
-    - Secondary endpoint: `GET /sync/v9/completed/get_by_ids` - retrieves completed items by parent IDs
-    - Authentication: Same Bearer token as REST API
-    - Response format: JSON with `items` array containing tasks with `checked: true` and `completed_at` timestamp
-  - **Completed Task Handler**: Create `src/handlers/completed-task-handlers.ts` for business logic
-    - Retrieve completed tasks with comprehensive filtering (project, labels, date ranges, content search)
-    - Client-side filtering after fetch (Sync API has limited server-side filter support)
-    - Integration with existing CacheManager (60-second TTL for completed tasks)
-  - **New MCP Tool**: Single tool `todoist_completed_tasks_get` with comprehensive filtering
-    - Filter by project ID or name
-    - Filter by label IDs or names
-    - Filter by completion date range (`completed_after`, `completed_before`)
-    - Filter by original due date range
-    - Filter by content/description search
-    - Limit results for performance
-  - **Type Definitions**: Extend `src/types.ts` with Sync API response interfaces
-    - `SyncCompletedTask` interface for completed task structure
-    - `GetCompletedTasksArgs` interface for MCP tool arguments
-  - **Type Guards**: Add `isGetCompletedTasksArgs()` validation in `src/type-guards.ts`
-  - **Tool Definition**: Create `src/tools/completed-task-tools.ts` with MCP tool schema
-  - **Server Integration**: Wire up in `src/index.ts` (tool registration, handler routing)
-  - **Dry-Run Support**: Extend dry-run wrapper to support Sync API simulation
-  - **Testing**: Add unit and integration tests for Sync API client and completed tasks
-  - **Total Impact**: ~400 lines, 7 files (3 new, 4 modified), 29 total MCP tools
-  - **Zero Breaking Changes**: Existing 28 tools continue working unchanged
-  - **No New Dependencies**: Use Node.js native `fetch` for HTTP requests
 - **Phase 5**: Duplicate Detection - Smart task deduplication using similarity algorithms
 - **Phase 6**: Project Analytics - Comprehensive project health metrics and insights
 
